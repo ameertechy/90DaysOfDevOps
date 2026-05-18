@@ -1,82 +1,81 @@
 # Day 03 – Linux Commands Practice
 
-## Task
-Today’s goal is to **build your Linux command confidence**.
+## Overview
 
-You will create a cheat sheet of commands focused on:
+Coming from 7+ years managing enterprise infrastructure, Linux commands are already part of my daily work.
+
+Day 3 is about deliberate formalization — building a structured, scannable cheat sheet organized the way a production engineer actually thinks during an incident: by scenario, not by alphabet.
+
+The cheat sheet covers three operational areas:
+
 - Process management
-- File system
-- Networking troubleshooting
-
-This is the command toolkit you will reuse for years.
+- Filesystem and disk operations
+- Network troubleshooting
 
 ---
 
-## Expected Output
-By the end of today, you should have:
+## What I Produced
 
-- A markdown file named:  
-  `linux-commands-cheatsheet.md`
-
-or
-
-- A hand written cheat sheet (Recommended)
-
-Your cheat sheet should be easy to scan during real troubleshooting.
+- [`linux-commands-cheatsheet.md`](./linux-commands-cheatsheet.md)
 
 ---
 
-## Guidelines
-Follow these rules while creating your cheat sheet:
+## Key Decisions
 
-- Include **at least 20 commands** with one‑line usage notes
-- Add **3 networking commands** (`ping`, `ip addr`, `dig`, `curl`, etc.)
-- Group commands by category
-- Keep it concise and readable
+**Grouped by scenario, not category name:**
+During an incident you think "what is consuming my CPU?" not "which section covers processes?" The cheat sheet mirrors that mental model.
 
----
+**Output notes included per command:**
+Knowing a command exists is different from knowing what healthy output looks like. Each section includes what to look for — not just syntax.
 
-## Resources
-You may refer to:
-
-- Linux `man` pages
-- Your class notes
-- Reliable Linux command references
-
-Don’t copy long lists. Focus on commands you understand.
+**Production triage sequence at the end:**
+Six steps. Covers system pulse, failed services, errors, resource consumers, network sanity, and service-specific logs. This is the sequence I run first on any alert.
 
 ---
 
-## Why This Matters for DevOps
-Real production issues are solved at the command line.
+## Real-World Tie-in
 
-The faster you can inspect logs and network issues, the faster you can:
-- Restore service
-- Reduce downtime
-- Gain trust as an operator
+These commands map directly to what I already do in production:
 
----
-
-## Submission
-1. Fork this `90DaysOfDevOps` repository  
-2. Navigate to the `2026/day-03/` folder  
-3. Add your `linux-commands-cheatsheet.md` file  
-4. Commit and push your changes to your fork  
+- `ps aux` + `top` — first check before opening Zabbix when a host alert fires
+- `ss -tulpn` — port binding verification after any service deployment
+- `journalctl -u <service>` — first step before escalating any service failure
+- `df -h` + `du -sh` — capacity check during backup pre-flight windows
+- `ip a` + `ping` + `dig` — network triage before touching switch-layer configs
 
 ---
 
-## Learn in Public
-Share your Day 03 progress on LinkedIn:
+## Docker Installation (Day 3 Hands-on Addition)
 
-- Post 2–3 lines on your favorite Linux commands
-- Share one log command and one networking command
-- Optional: screenshot of your cheat sheet
+Installed Docker Engine today to have a real running service for upcoming days.
 
-Use hashtags:
-#90DaysOfDevOps
-#DevOpsKaJosh
-#TrainWithShubham
+```bash
+# Install Docker Engine on Ubuntu 24.04
+sudo apt update
+sudo apt install -y ca-certificates curl gnupg
+sudo install -m 0755 -d /etc/apt/keyrings
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+sudo chmod a+r /etc/apt/keyrings/docker.gpg
 
+echo \
+  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] \
+  https://download.docker.com/linux/ubuntu \
+  $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
+  sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
 
-Happy Learning  
-**TrainWithShubham**
+sudo apt update
+sudo apt install -y docker-ce docker-ce-cli containerd.io
+
+# Add user to docker group (no sudo needed)
+sudo usermod -aG docker $USER
+
+# Verify
+docker --version
+sudo systemctl status docker
+```
+
+Docker gives a real service to apply every command from the cheatsheet — `systemctl`, `journalctl`, `ss -tulpn`, `ps aux` — against something that actually runs.
+
+---
+
+`#90DaysOfDevOps` `#DevOpsKaJosh` `#TrainWithShubham` `#Linux` `#DevOps`

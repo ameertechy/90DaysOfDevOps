@@ -1,5 +1,5 @@
 # File I/O Practice Log
-*Day 06 | Thu 22 May 2026 | #90DaysOfDevOps 2026*
+*Day 06 | #90DaysOfDevOps 2026*
 
 ---
 
@@ -265,4 +265,4 @@ This pattern is used constantly in production Linux administration and automatio
 
 ---
 
-*Day 06 | Thu 22 May 2026 | #90DaysOfDevOps 2026*
+*Day 06 | #90DaysOfDevOps 2026*

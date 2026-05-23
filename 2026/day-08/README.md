@@ -1,146 +1,59 @@
-# Day 08 – Cloud Server Setup: Docker, Nginx & Web Deployment
+# Day 08 – Cloud Server Setup: AWS EC2 and Nginx Deployment
 
-## Task
-Today's goal is to **deploy a real web server on the cloud** and learn practical server management.
+## Overview
 
-You will:
-- Launch a cloud instance (AWS EC2 or Utho)
-- Connect via SSH
-- Install Nginx
-- Configure security groups for web access (port 80 by default for nginx)
-- Extract and save logs to a file
-- Verify your webpage is accessible from the internet
+Day 8 moved off the local VM and onto a real cloud server — an AWS EC2 instance running Ubuntu 26.04 LTS in the us-west-2 region.
 
-This is real DevOps work - exactly what you'll do in production.
+The task: launch an instance, connect via SSH using a `.pem` key from Git Bash, install Nginx, configure the security group to allow HTTP traffic, customize the default page, and verify the server is reachable from the public internet.
+
+This is not a simulation. The server was live on the internet, serving HTTP traffic on a public IP.
 
 ---
 
-## Expected Output
-By the end of today, you should have:
+## What I Produced
 
-1. A markdown file named: `day-08-cloud-deployment.md`
-2. Screenshots showing:
-   - SSH connection to your server
-   - Nginx welcome page accessible from browser
-   - Log file contents
-3. The log file: `nginx-logs.txt`
+- [`cloud-server-setup.md`](./cloud-server-setup.md)
 
 ---
 
-## Prerequisites
-- AWS account (Free Tier) OR Utho account
-- Basic understanding of Linux commands (Days 1-7)
-- SSH client (Terminal on Mac/Linux, PuTTY on Windows)
+## Key Observations
+
+**EC2 is just a Linux server with a managed network layer on top.**
+Once SSH'd in, everything I practiced in Days 3–7 applied immediately — `systemctl status nginx`, `journalctl -u nginx`, `ss -tulpn`, `tail -f /var/log/nginx/access.log`. The cloud does not change Linux. It changes how the server is provisioned and how network access is controlled.
+
+**Security Groups are the cloud equivalent of a firewall — and they are stateful.**
+Port 22 (SSH) was open by default. Port 80 (HTTP) had to be explicitly added to the inbound rules before the browser could reach Nginx. Without that rule, the server was running perfectly but completely unreachable from outside. Understanding this layer is critical — it is the first thing I check when a cloud service is "not responding."
+
+**SSH with a `.pem` key is the production standard for cloud access.**
+No password. The private key file on my laptop is the only credential. If it is lost or leaked, the instance access must be revoked immediately from the AWS console. This is why key pair management is a governance item, not just a convenience.
+
+**The custom Nginx page confirmed end-to-end delivery.**
+Modifying `/var/www/html/index.nginx-debian.html` and seeing my own text load on a public IP from a browser — that is the complete delivery chain: server → service → public network → client. Every layer working correctly.
 
 ---
 
-## Guidelines
+## Infrastructure Details
 
-### Part 1: Launch Cloud Instance & SSH Access (15 minutes)
-
-**Step 1: Create a Cloud Instance**
-
-
-**Step 2: Connect via SSH**
-
-
----
-
-### Part 2: Install Docker & Nginx (20 minutes)
-
-**Step 1: Update System**
-
-
-**Step 3: Install Nginx**
-
-**Verify Nginx is running:**
+| Property | Value |
+|----------|-------|
+| Cloud | AWS |
+| Region | us-west-2 (Oregon) |
+| Instance type | t3.small |
+| OS | Ubuntu 26.04 LTS |
+| Kernel | 7.0.0-1004-aws |
+| SSH method | `.pem` key via Git Bash |
+| Ports configured | 22 (SSH), 80 (HTTP) |
+| Web server | Nginx |
 
 ---
 
-### Part 3: Security Group Configuration (10 minutes)
+## Real-World Tie-in
 
-**Test Web Access:**
-Open browser and visit: `http://<your-instance-ip>`
-
-You should see the **Nginx welcome page**!
-
-📸 **Screenshot this page** - you'll need it for submission
+- This is the exact same process I follow when provisioning Linux VMs in the university data centre — the only difference is Hyper-V instead of EC2 and a physical network instead of a Security Group
+- SSH key authentication without passwords is the same zero-trust principle I apply in JumpServer PAM — key-based, audited, no shared credentials
+- Security Group configuration is conceptually identical to FortiGate firewall rules — define source, destination, port, action
+- Nginx on EC2 is the starting point for every web application deployment in the coming days — Day 8 is the foundation
 
 ---
 
-### Part 4: Extract Nginx Logs (15 minutes)
-
-**Step 1: View Nginx Logs**
-
-**Step 2: Save Logs to File**
-
-**Step 3: Download Log File to Your Local Machine**
-```bash
-# On your local machine (new terminal window)
-# For AWS:
-scp -i your-key.pem ubuntu@<your-instance-ip>:~/nginx-logs.txt .
-
-# For Utho:
-scp root@<your-instance-ip>:~/nginx-logs.txt .
-```
-
----
-
-
-## Documentation Template
-
-Create your `day-08-cloud-deployment.md` with this structure:
-
-## Commands Used
-[List the key commands you used]
-
-## Challenges Faced
-[Describe any issues and how you solved them]
-
-## What I Learned
-[3-5 bullet points of key learnings]
-
----
-
-
-## Why This Matters for DevOps
-
-This exercise teaches you:
-- **Cloud infrastructure provisioning** - launching and configuring servers
-- **Remote server management** - SSH, security, access control
-- **Service deployment** - installing and running applications
-- **Log management** - accessing and analyzing logs
-- **Security** - configuring firewalls and security groups
-
-These are core skills for any DevOps engineer working in production.
-
----
-
-
-## Submission
-1. Fork this `90DaysOfDevOps` repository
-2. Navigate to the `2026/day-08/` folder
-3. Add your `day-08-cloud-deployment.md` file
-4. Add your `nginx-logs.txt` file
-5. Add screenshots (name them: `ssh-connection.png`, `nginx-webpage.png`, `docker-nginx.png`)
-6. Commit and push your changes to your fork
-
----
-
-## Learn in Public
-Share your Day 08 progress on LinkedIn:
-
-- Post 2-3 lines on deploying your first cloud server
-- Share screenshot of your Nginx webpage
-- Mention one challenge you faced and solved
-- Optional: Share your instance IP (if comfortable)
-
-Use hashtags:
-```
-#90DaysOfDevOps
-#DevOpsKaJosh
-#TrainWithShubham
-```
-
-Happy Learning
-**TrainWithShubham**
+`#90DaysOfDevOps` `#DevOpsKaJosh` `#TrainWithShubham` `#AWS` `#Linux` `#DevOps` `#Cloud`

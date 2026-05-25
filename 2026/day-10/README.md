@@ -1,117 +1,55 @@
-# Day 10 – File Permissions & File Operations Challenge
+# Day 10 – File Permissions and File Operations Challenge
 
-## Task
-Master file permissions and basic file operations in Linux.
+## Overview
 
-- Create and read files using `touch`, `cat`, `vim`
-- Understand and modify permissions using `chmod`
+Day 10 takes file permissions from theory into deliberate practice.
 
----
+After 7+ years in infrastructure, I apply `chmod` and `ls -l` daily — but often without thinking about the underlying model. Today I ran through every permission scenario systematically: creating files, reading the permission string precisely, modifying permissions using both symbolic and octal notation, and deliberately testing what happens when permissions are violated.
 
-## Expected Output
-- A markdown file: `day-10-file-permissions.md`
-- Screenshots showing permission changes
+This is the foundation for everything that follows — Docker volume mounts, CI/CD pipeline scripts, Ansible file modules, and Kubernetes security contexts all map back to exactly this permission model.
 
 ---
 
-## Challenge Tasks
+## What I Produced
 
-### Task 1: Create Files (10 minutes)
-
-1. Create empty file `devops.txt` using `touch`
-2. Create `notes.txt` with some content using `cat` or `echo`
-3. Create `script.sh` using `vim` with content: `echo "Hello DevOps"`
-
-**Verify:** `ls -l` to see permissions
+- [`day-10-file-permissions.md`](./day-10-file-permissions.md)
 
 ---
 
-### Task 2: Read Files (10 minutes)
+## Files Created and Permission States
 
-1. Read `notes.txt` using `cat`
-2. View `script.sh` in vim read-only mode
-3. Display first 5 lines of `/etc/passwd` using `head`
-4. Display last 5 lines of `/etc/passwd` using `tail`
-
----
-
-### Task 3: Understand Permissions (10 minutes)
-
-Format: `rwxrwxrwx` (owner-group-others)
-- `r` = read (4), `w` = write (2), `x` = execute (1)
-
-Check your files: `ls -l devops.txt notes.txt script.sh`
-
-Answer: What are current permissions? Who can read/write/execute?
+| File | Initial Permissions | Final Permissions | Purpose |
+|------|-------------------|-------------------|---------|
+| `devops.txt` | `644` (rw-r--r--) | `444` (r--r--r--) | Read-only for all |
+| `notes.txt` | `644` (rw-r--r--) | `640` (rw-r-----) | Owner rw, group r, others none |
+| `script.sh` | `644` (rw-r--r--) | `755` (rwxr-xr-x) | Executable script |
+| `project/` | `755` (rwxr-xr-x) | `755` (rwxr-xr-x) | Standard directory |
 
 ---
 
-### Task 4: Modify Permissions (20 minutes)
+## Key Observations
 
-1. Make `script.sh` executable → run it with `./script.sh`
-2. Set `devops.txt` to read-only (remove write for all)
-3. Set `notes.txt` to `640` (owner: rw, group: r, others: none)
-4. Create directory `project/` with permissions `755`
+**Default permissions are set by `umask` — not by the command.**
+When I create a file with `touch`, it gets `644` by default. When I create a directory with `mkdir`, it gets `755`. These are not hardcoded — they are calculated from `umask`. The system default `umask 022` subtracts write permission from group and others. Understanding `umask` is what lets me change the default for all files a service creates.
 
-**Verify:** `ls -l` after each change
+**Symbolic vs octal — both are production tools.**
+`chmod +x script.sh` is faster for single changes. `chmod 755 script.sh` is what goes into scripts, Dockerfiles, and Ansible playbooks because it sets the absolute state — not relative. If a file is currently `777` and I run `chmod +x`, nothing changes. If I run `chmod 755`, it is corrected to exactly what I intend.
 
----
+**Permission denied errors are diagnostic data — not just failures.**
+When `echo "test" >> devops.txt` fails with `Permission denied`, that is the access control model working correctly. In production, unexpected permission denied errors on service files tell me exactly which user is trying to write and what ownership needs to be fixed.
 
-### Task 5: Test Permissions (10 minutes)
-
-1. Try writing to a read-only file - what happens?
-2. Try executing a file without execute permission
-3. Document the error messages
+**`vim` is unavoidable in production Linux.**
+Every cloud server has `vim` or `vi`. Knowing how to open, edit, save, and quit — and how to open in read-only mode — is mandatory. `nano` may not be installed. `vim` always is.
 
 ---
 
-## Hints
+## Real-World Tie-in
 
-- Create: `touch`, `cat > file`, `vim file`
-- Read: `cat`, `head -n`, `tail -n`
-- Permissions: `chmod +x`, `chmod -w`, `chmod 755`
-
----
-
-## Documentation
-
-Create `day-10-file-permissions.md`:
-
-```markdown
-# Day 10 Challenge
-
-## Files Created
-[list files]
-
-## Permission Changes
-[before/after for each file]
-
-## Commands Used
-[your commands]
-
-## What I Learned
-[3 key points]
-```
+- `chmod 600` on SSH private key files — the exact permission level that SSH enforces. Too open = rejected connection
+- `chmod 755` on deployment scripts — owner can execute and modify, everyone else can only read and execute
+- `chmod 640` on config files with secrets — owner reads/writes, service group reads, world sees nothing
+- `umask 027` on application servers — default file creation masks out all world permissions for security hardening
 
 ---
 
-## Submission
-1. Navigate to `2026/day-10/` folder
-2. Add `day-10-file-permissions.md` with screenshots
-3. Commit and push
-
----
-
-## Learn in Public
-
-Share on LinkedIn about mastering file permissions.
-
-Use hashtags:
-```
-#90DaysOfDevOps
-#DevOpsKaJosh
-#TrainWithShubham
-```
-
-Happy Learning
-**TrainWithShubham**
+`#90DaysOfDevOps` `#DevOpsKaJosh` `#TrainWithShubham` `#Linux` `#DevOps`

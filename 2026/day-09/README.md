@@ -1,150 +1,67 @@
-# Day 09 – Linux User & Group Management Challenge
+# Day 09 – Linux User and Group Management Challenge
 
-## Task
-Today's goal is to **practice user and group management** by completing hands-on challenges.
+## Overview
 
-Figure out how to:
-- Create users and set passwords
-- Create groups and assign users
-- Set up shared directories with group permissions
+Day 9 is a hands-on challenge built around one of the most fundamental Linux administration tasks: managing who has access to what.
 
-Use what you learned from Days 1-7 to find the right commands!
+In any production environment — whether a university data centre, a cloud server, or a Kubernetes node — user and group management is the foundation of access control. Every file has an owner. Every process runs as a user. Every service account is a system user. Getting this wrong causes security gaps and operational failures.
+
+Today I worked through five challenge tasks on an AWS EC2 instance: creating users, creating groups, assigning memberships, building shared directories with group permissions, and testing access as different users.
 
 ---
 
-## Expected Output
-- A markdown file: `day-09-user-management.md`
-- Screenshots of command outputs
-- List of commands used
+## What I Produced
+
+- [`day-09-user-management.md`](./day-09-user-management.md)
 
 ---
 
-## Challenge Tasks
+## Users and Groups Created
 
-### Task 1: Create Users (20 minutes)
+**Users:** `tokyo`, `berlin`, `professor`, `nairobi`
 
-Create three users with home directories and passwords:
-- `tokyo`
-- `berlin`
-- `professor`
+**Groups:** `developers`, `admins`, `project-team`
 
-**Verify:** Check `/etc/passwd` and `/home/` directory
+**Group assignments:**
 
----
+| User | Groups |
+|------|--------|
+| tokyo | developers, project-team |
+| berlin | developers, admins |
+| professor | admins |
+| nairobi | project-team |
 
-### Task 2: Create Groups (10 minutes)
+**Shared directories:**
 
-Create two groups:
-- `developers`
-- `admins`
-
-**Verify:** Check `/etc/group`
-
----
-
-### Task 3: Assign to Groups (15 minutes)
-
-Assign users:
-- `tokyo` → `developers`
-- `berlin` → `developers` + `admins` (both groups)
-- `professor` → `admins`
-
-**Verify:** Use appropriate command to check group membership
+| Directory | Group | Permissions |
+|-----------|-------|-------------|
+| `/opt/dev-project` | developers | 775 |
+| `/opt/team-workspace` | project-team | 775 |
 
 ---
 
-### Task 4: Shared Directory (20 minutes)
+## Key Observations
 
-1. Create directory: `/opt/dev-project`
-2. Set group owner to `developers`
-3. Set permissions to `775` (rwxrwxr-x)
-4. Test by creating files as `tokyo` and `berlin`
+**`useradd` and `adduser` are not the same command.**
+`useradd` is the low-level system utility — it creates the user but does not set up a home directory, password prompt, or default shell unless flags are explicitly passed. `adduser` is a higher-level wrapper (Debian/Ubuntu specific) that is interactive, sets up the home directory, and prompts for a password automatically. In scripts, `useradd` with flags is standard. Interactively on Ubuntu, `adduser` is cleaner.
 
-**Verify:** Check permissions and test file creation
+**`-aG` in `usermod` — both flags are mandatory together.**
+`usermod -G developers tokyo` without `-a` removes tokyo from all other groups and puts them only in developers. `-a` means append — add to the group without touching existing memberships. Forgetting `-a` in production silently removes a user's sudo access or service access. Always use `-aG` together.
 
----
+**`775` on a shared directory is the correct production pattern.**
+Owner: full control. Group: full control. Others: read and execute only. This means any user in the `developers` group can create, edit, and delete files in `/opt/dev-project`, but users outside the group can only read. The `setgid` bit (`chmod g+s`) extends this further — new files inherit the group automatically.
 
-### Task 5: Team Workspace (20 minutes)
-
-1. Create user `nairobi` with home directory
-2. Create group `project-team`
-3. Add `nairobi` and `tokyo` to `project-team`
-4. Create `/opt/team-workspace` directory
-5. Set group to `project-team`, permissions to `775`
-6. Test by creating file as `nairobi`
+**`/etc/passwd` and `/etc/group` are the source of truth.**
+Every user and group operation writes to these files. `cat /etc/passwd | grep tokyo` is the definitive check — not just `id tokyo`. Understanding these files is what separates operators who understand the system from those who just run commands.
 
 ---
 
-## Hints
+## Real-World Tie-in
 
-**Stuck? Try these commands:**
-- User: `useradd`, `passwd`, `usermod`
-- Group: `groupadd`, `groups`
-- Permissions: `chgrp`, `chmod`
-- Test: `sudo -u username command`
-
-**Tip:** Use `-m` flag with useradd for home directory, `-aG` for adding to groups
+- Every service I deploy runs as a dedicated system user — Nginx as `www-data`, Docker as `docker` group, MySQL as `mysql`. This is the same `useradd` / `usermod` pattern applied to service accounts
+- The `developers` group with `775` on a shared directory is exactly how I manage shared infrastructure scripts in the data centre — team members in the group, scripts in a shared directory, no one using root for routine operations
+- `sudo chown` and `chgrp` are commands I run after every deployment to ensure service files are owned by the right process user — a misconfigured ownership causes a permission denied on service start
 
 ---
 
-## Documentation
-
-Create `day-09-user-management.md`:
-
-```markdown
-# Day 09 Challenge
-
-## Users & Groups Created
-- Users: tokyo, berlin, professor, nairobi
-- Groups: developers, admins, project-team
-
-## Group Assignments
-[List who is in which groups]
-
-## Directories Created
-[List directories with permissions]
-
-## Commands Used
-[Your commands here]
-
-## What I Learned
-[3 key points]
-```
-
----
-
-
-## Troubleshooting
-
-**Permission denied?** Use `sudo`
-
-**User can't access directory?**
-- Check group: `groups username`
-- Check permissions: `ls -ld /path`
-
----
-
-## Submission
-1. Fork this `90DaysOfDevOps` repository
-2. Navigate to `2026/day-09/` folder
-3. Add your `day-09-user-management.md` with screenshots
-4. Commit and push
-
----
-
-## Learn in Public
-Share your Day 09 progress on LinkedIn:
-
-- Post about completing the user management challenge
-- Share one thing you figured out
-- Mention real-world DevOps use
-
-Use hashtags:
-```
-#90DaysOfDevOps
-#DevOpsKaJosh
-#TrainWithShubham
-```
-
-Happy Learning
-**TrainWithShubham**
+`#90DaysOfDevOps` `#DevOpsKaJosh` `#TrainWithShubham` `#Linux` `#DevOps`

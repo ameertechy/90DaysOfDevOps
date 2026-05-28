@@ -1,99 +1,56 @@
 # Day 13 – Linux Volume Management (LVM)
 
-## Task
-Learn LVM to manage storage flexibly – create, extend, and mount volumes.
+## Overview
 
-**Watch First:** [Linux LVM Tutorial](https://youtu.be/Evnf2AAt7FQ?si=ncnfQYySYtK_2K3c)
+Day 13 is storage management — one of the areas I work with daily in production.
 
----
+Managing Huawei OceanStor SAN, QNAP NAS, LUN provisioning, RAID tuning, and Veeam backup storage are part of my current role. LVM sits one layer below all of that — it is the Linux abstraction that makes flexible disk management possible without repartitioning.
 
-## Expected Output
-- A markdown file: `day-13-lvm.md`
-- Screenshots of command outputs
+Today I worked on the Hyper-V lab VM where LVM is already running in production (`ubuntu--vg-ubuntu--lv`). I observed the live setup, then created a virtual disk using `dd` and `losetup` to practice the full LVM lifecycle — physical volume, volume group, logical volume, format, mount, and extend — without touching the live system.
 
 ---
 
-## Before You Start
+## What I Produced
 
-Switch to root user:
-```bash
-sudo -i
-```
-or
-```bash
-sudo su
-```
-No spare disk? Create a virtual one (watch the tutorial):
-```bash
-dd if=/dev/zero of=/tmp/disk1.img bs=1M count=1024
-losetup -fP /tmp/disk1.img
-losetup -a   # Note the device name (e.g., /dev/loop0)
-```
+- [`day-13-lvm.md`](./day-13-lvm.md)
 
 ---
 
-## Challenge Tasks
+## LVM Setup Created
 
-### Task 1: Check Current Storage
-Run: `lsblk`, `pvs`, `vgs`, `lvs`, `df -h`
-
-### Task 2: Create Physical Volume
-```bash
-pvcreate /dev/sdb   # or your loop device
-pvs
-```
-
-### Task 3: Create Volume Group
-```bash
-vgcreate devops-vg /dev/sdb
-vgs
-```
-
-### Task 4: Create Logical Volume
-```bash
-lvcreate -L 500M -n app-data devops-vg
-lvs
-```
-
-### Task 5: Format and Mount
-```bash
-mkfs.ext4 /dev/devops-vg/app-data
-mkdir -p /mnt/app-data
-mount /dev/devops-vg/app-data /mnt/app-data
-df -h /mnt/app-data
-```
-
-### Task 6: Extend the Volume
-```bash
-lvextend -L +200M /dev/devops-vg/app-data
-resize2fs /dev/devops-vg/app-data
-df -h /mnt/app-data
-```
+| Layer | Name | Size |
+|-------|------|------|
+| Physical Volume | `/dev/loop0` (virtual disk) | 1GB |
+| Volume Group | `devops-vg` | 1GB |
+| Logical Volume | `app-data` | 500MB → extended to 700MB |
+| Filesystem | ext4 | — |
+| Mount point | `/mnt/app-data` | — |
 
 ---
 
-## Documentation
+## Key Observations
 
-Create `day-13-lvm.md` with:
-- Commands used
-- Screenshots of outputs
-- What you learned (3 points)
+**LVM adds a flexible layer between physical disk and filesystem.**
+Without LVM: a 100GB partition is a fixed partition. To grow it, you need to repartition — risky, disruptive, often requires downtime. With LVM: logical volumes can be extended live while mounted, snapshotted, and moved across physical disks transparently.
+
+**Three layers — PV → VG → LV — each has a specific job.**
+The physical volume (`pvcreate`) registers a disk with LVM. The volume group (`vgcreate`) pools one or more physical volumes into a single storage resource. The logical volume (`lvcreate`) carves out a usable chunk from that pool. Add a new disk to the VG and immediately have more space to allocate to any LV.
+
+**`resize2fs` after `lvextend` is mandatory.**
+`lvextend` grows the logical volume block device. But the filesystem sitting on top does not know yet — it still thinks it is the old size. `resize2fs` tells ext4 to expand and claim the newly available space. Miss this step and `df -h` still shows the original size.
+
+**The Hyper-V VM is already running LVM in production.**
+`ubuntu--vg` is the volume group. `ubuntu--lv` is the logical volume. The root filesystem is mounted on it. This is the exact setup I observed before building the practice volume — understanding the live system first, then replicating the pattern safely on a virtual disk.
 
 ---
 
-## Submission
-1. Add your `day-13-lvm.md` to `2026/day-13/`
-2. Commit and push
+## Real-World Tie-in
+
+- `lvextend` + `resize2fs` is the exact sequence for growing a production Linux VM's root disk — zero downtime, live filesystem expansion
+- Huawei OceanStor LUN provisioning is the SAN equivalent of `lvcreate` — carving a logical chunk from a physical pool
+- LVM snapshots are the Linux equivalent of Hyper-V checkpoints — point-in-time consistent state without stopping the system
+- The `dd` virtual disk method is how I safely practice destructive storage operations without risking the live system
 
 ---
 
-## Learn in Public
-
-Share your LVM progress on LinkedIn.
-
-```
-#90DaysOfDevOps #DevOpsKaJosh #TrainWithShubham
-```
-
-Happy Learning!
-**TrainWithShubham**
+`#90DaysOfDevOps` `#DevOpsKaJosh` `#TrainWithShubham` `#Linux` `#DevOps`

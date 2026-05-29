@@ -1,70 +1,71 @@
-# Day 14 – Networking Fundamentals & Hands-on Checks
+# Day 14 – Networking Fundamentals and Hands-On Checks
 
-## Task
-Get comfortable with core networking concepts and the commands you’ll actually run during troubleshooting.
+## Overview
 
-You will:
-- Map the **OSI vs TCP/IP models** in your own words
-- Run essential connectivity commands
-- Capture a mini network check for a target host/service
+Day 14 is networking — the layer I work with most in production.
 
-Keep it short, real, and repeatable.
+CCNA certified. Managing Huawei L2/L3 campus switching via Agile Controller, eSight, and iMaster NCE. Configuring VLANs, ACLs, QoS, FortiGate firewall rules, and Cloudflare DNS daily. Networking is not new territory.
+
+What is new: running Linux networking commands systematically and mapping them precisely to the OSI model layer by layer. Today I ran every connectivity command against a live EC2 instance, documented what each output tells me, and built a reusable network check sequence I can reach for during any incident.
 
 ---
 
-## Expected Output
-- A markdown file: `day-14-networking.md`
-- Screenshots (optional) of key command outputs
+## What I Produced
+
+- [`day-14-networking.md`](./day-14-networking.md)
 
 ---
 
-## Quick Concepts (write 1–2 bullets each)
-- OSI layers (L1–L7) vs TCP/IP stack (Link, Internet, Transport, Application)
-- Where **IP**, **TCP/UDP**, **HTTP/HTTPS**, **DNS** sit in the stack
-- One real example: “`curl https://example.com` = App layer over TCP over IP”
+## Commands Ran and Target
+
+**Target:** `google.com` and `localhost` (Nginx on EC2)
+
+| Command | Layer | Finding |
+|---------|-------|---------|
+| `hostname -I` / `ip addr show` | L3 Network | Private IP `172.31.x.x`, interface `ens5` |
+| `ping google.com` | L3 Network | 0% packet loss, low RTT |
+| `traceroute google.com` | L3 Network | Path through AWS backbone |
+| `ss -tulpn` | L4 Transport | Port 22 (sshd), Port 80 (nginx) |
+| `dig google.com` | L7 Application | DNS resolved correctly |
+| `curl -I https://google.com` | L7 Application | HTTP 301 redirect response |
+| `netstat -an \| head` | L4 Transport | ESTABLISHED SSH session visible |
+| `nc -zv localhost 80` | L4 Transport | Port 80 reachable, Nginx confirmed |
 
 ---
 
-## Hands-on Checklist (run these; add 1–2 line observations)
-- **Identity:** `hostname -I` (or `ip addr show`) — note your IP.
-- **Reachability:** `ping <target>` — mention latency and packet loss.
-- **Path:** `traceroute <target>` (or `tracepath`) — note any long hops/timeouts.
-- **Ports:** `ss -tulpn` (or `netstat -tulpn`) — list one listening service and its port.
-- **Name resolution:** `dig <domain>` or `nslookup <domain>` — record the resolved IP.
-- **HTTP check:** `curl -I <http/https-url>` — note the HTTP status code.
-- **Connections snapshot:** `netstat -an | head` — count ESTABLISHED vs LISTEN (rough).
+## Key Observations
 
-Pick one target service/host (e.g., `google.com`, your lab server, or a local service) and stick to it for ping/traceroute/curl where possible.
+**Every command maps to a specific OSI layer — troubleshooting is top-down or bottom-up.**
+If `ping` fails, the problem is at L3 or below — no point running `curl`. If `ping` works but `curl` fails, the problem is L4–L7. Understanding layers means I know which command to run next without guessing.
 
----
+**`ss` replaced `netstat` — but both are still in production.**
+`netstat` is deprecated on modern Linux. `ss` is faster and uses kernel APIs directly. In production environments running older OS versions, `netstat` is still present. Knowing both matters.
 
-## Mini Task: Port Probe & Interpret
-1) Identify one listening port from `ss -tulpn` (e.g., SSH on 22 or a local web app).  
-2) From the same machine, test it: `nc -zv localhost <port>` (or `curl -I http://localhost:<port>`).  
-3) Write one line: is it reachable? If not, what’s the next check? (e.g., service status, firewall).
+**`dig` vs `nslookup` — `dig` is the production tool.**
+`nslookup` is interactive and harder to script. `dig` returns structured output that can be piped and parsed. `dig +short` gives just the IP — clean for scripting and automation.
+
+**`traceroute` on EC2 shows AWS backbone hops.**
+The first few hops inside AWS are the VPC routing fabric responding with very low latency. External hops show normal internet latency. This is expected on AWS — not a sign of a problem.
 
 ---
 
-## Reflection (add to your markdown)
-- Which command gives you the fastest signal when something is broken?
-- What layer (OSI/TCP-IP) would you inspect next if DNS fails? If HTTP 500 shows up?
-- Two follow-up checks you’d run in a real incident.
+## Reflection
+
+**Fastest signal when something is broken:** `ping` — two seconds to confirm L3 connectivity. If it fails, everything above it fails too.
+
+**If DNS fails:** Check `/etc/resolv.conf` for nameserver config, test with `dig @8.8.8.8 domain.com` to bypass local resolver and isolate whether the issue is local config or upstream DNS.
+
+**If HTTP 500 appears:** Stay at L7 — check application logs, confirm the app port is bound with `ss -tulpn`. A 500 means L3/L4 is healthy but the application itself failed.
 
 ---
 
-## Submission
-1. Add `day-14-networking.md` to `2026/day-14/`
-2. Commit and push to your fork
+## Real-World Tie-in
+
+- `ping` + `traceroute` before escalating to the Huawei switch team — confirm L3 reachability first, rule out routing before touching switch configs
+- `ss -tulpn` after every service deployment — confirm the service bound to the expected port
+- `dig @8.8.8.8` after Cloudflare DNS updates — bypasses local cache, queries external resolver directly
+- `curl -I` is the HTTP equivalent of `ping` — fast health check for any web service
 
 ---
 
-## Learn in Public
-Post 2–3 lines on the commands you practiced and one interesting traceroute/curl finding.
-
-Use hashtags:  
-#90DaysOfDevOps  
-#DevOpsKaJosh  
-#TrainWithShubham
-
-Happy Learning  
-**TrainWithShubham**
+`#90DaysOfDevOps` `#DevOpsKaJosh` `#TrainWithShubham` `#Networking` `#Linux` `#DevOps`

@@ -1,102 +1,53 @@
-# Day 25 – Git Reset vs Revert & Branching Strategies
+# Day 25 – Git Reset vs Revert and Branching Strategies
 
-## Task
+## Overview
 
-You'll learn how to **undo mistakes** safely — one of the most important skills in Git. You'll also explore **branching strategies** used by real engineering teams to manage code at scale.
+Day 25 covers two things that every engineer working in a team environment must understand cold: how to undo mistakes safely, and how teams structure their branching workflow to ship code without stepping on each other.
 
----
+Reset and revert are both "undo" tools — but they operate at different levels of safety and have completely different implications for shared branches. Getting this wrong in a team environment causes real damage.
 
-## Expected Output
-- A markdown file: `day-25-notes.md` with your observations and answers
-- Continue updating `git-commands.md` in your `devops-git-practice` repo
+Branching strategies are the policies that determine how code moves from a developer's machine to production. Choosing the wrong one for your team's pace creates friction — too rigid for a fast-moving team, too loose for a regulated environment.
 
 ---
 
-## Challenge Tasks
+## What I Produced
 
-### Task 1: Git Reset — Hands-On
-1. Make 3 commits in your practice repo (commit A, B, C)
-2. Use `git reset --soft` to go back one commit — what happens to the changes?
-3. Re-commit, then use `git reset --mixed` to go back one commit — what happens now?
-4. Re-commit, then use `git reset --hard` to go back one commit — what happens this time?
-5. Answer in your notes:
-   - What is the difference between `--soft`, `--mixed`, and `--hard`?
-   - Which one is destructive and why?
-   - When would you use each one?
-   - Should you ever use `git reset` on commits that are already pushed?
+- [`day-25-notes.md`](./day-25-notes.md)
+- Updated `git-commands.md`
 
 ---
 
-### Task 2: Git Revert — Hands-On
-1. Make 3 commits (commit X, Y, Z)
-2. Revert commit Y (the middle one) — what happens?
-3. Check `git log` — is commit Y still in the history?
-4. Answer in your notes:
-   - How is `git revert` different from `git reset`?
-   - Why is revert considered **safer** than reset for shared branches?
-   - When would you use revert vs reset?
+## Tasks Completed
+
+| Task | What I Did |
+|------|-----------|
+| 1 | Ran all three reset modes — observed staging area and working dir after each |
+| 2 | Reverted the middle commit — observed it stays in history as a revert commit |
+| 3 | Built reset vs revert comparison table |
+| 4 | Documented GitFlow, GitHub Flow, Trunk-Based Development with diagrams |
+| 5 | Updated `git-commands.md` with Days 22–25 coverage |
 
 ---
 
-### Task 3: Reset vs Revert — Summary
-Create a comparison in your notes:
+## Key Observations
 
-| | `git reset` | `git revert` |
-|---|---|---|
-| What it does | ? | ? |
-| Removes commit from history? | ? | ? |
-| Safe for shared/pushed branches? | ? | ? |
-| When to use | ? | ? |
+**`--soft` keeps everything staged — it is the safest reset.**
+The commit is undone but all changes stay staged and ready to recommit. Use it when the commit was premature — content is right, timing or message was wrong.
 
----
+**`--hard` is the only destructive one — and `git reflog` is the only recovery.**
+After `git reset --hard HEAD~1`, the commit is gone from history and the changes are gone from the working directory. The only way back is `git reflog` to find the commit hash and `git reset --hard <hash>` to restore it. This works only within 90 days of the original operation.
 
-### Task 4: Branching Strategies
-Research the following branching strategies and document each in your notes with:
-- How it works (short description)
-- A simple diagram or flow (text-based is fine)
-- When/where it's used
-- Pros and cons
-
-1. **GitFlow** — develop, feature, release, hotfix branches
-2. **GitHub Flow** — simple, single main branch + feature branches
-3. **Trunk-Based Development** — everyone commits to main, short-lived branches
-4. Answer:
-   - Which strategy would you use for a startup shipping fast?
-   - Which strategy would you use for a large team with scheduled releases?
-   - Which one does your favorite open-source project use? (check any repo on GitHub)
+**GitFlow is structured — GitHub Flow is simple — Trunk-Based is fast.**
+The right branching strategy is determined by release cadence, team size, and compliance requirements. A university IT team shipping infrastructure automation daily would use GitHub Flow. A regulated financial platform with quarterly releases would use GitFlow. A startup with multiple daily deploys would use Trunk-Based Development.
 
 ---
 
-### Task 5: Git Commands Reference Update
-Update your `git-commands.md` to cover everything from Days 22–25:
-- Setup & Config
-- Basic Workflow (add, commit, status, log, diff)
-- Branching (branch, checkout, switch)
-- Remote (push, pull, fetch, clone, fork)
-- Merging & Rebasing
-- Stash & Cherry Pick
-- Reset & Revert
+## Real-World Tie-in
+
+- `git revert` is the production-safe undo — used when a bad commit needs to be undone on `main` without rewriting history that the team has already pulled
+- GitFlow maps directly to how I manage university infrastructure changes — `develop` = staging, `release` = change approval, `main` = production, `hotfix` = emergency change
+- Trunk-based development is what CI/CD pipelines are designed around — short-lived branches, frequent integration, automated testing gates
 
 ---
 
-## Hints
-- `git reflog` is your safety net — it shows everything Git has done, even after a hard reset
-- For branching strategies, look at how projects like Kubernetes, React, or Linux kernel manage branches
-
----
-
-## Submission
-1. Add your `day-25-notes.md` to `2026/day-25/`
-2. Update `git-commands.md` — commit and push
-3. Push to your fork
-
----
-
-## Learn in Public
-
-Share your Reset vs Revert comparison or your branching strategy notes on LinkedIn.
-
-`#90DaysOfDevOps` `#DevOpsKaJosh` `#TrainWithShubham`
-
-Happy Learning!
-**TrainWithShubham**
+`#90DaysOfDevOps` `#DevOpsKaJosh` `#TrainWithShubham` `#Git` `#GitHub` `#DevOps`

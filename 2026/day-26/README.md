@@ -1,96 +1,58 @@
-# Day 26 – GitHub CLI: Manage GitHub from Your Terminal
+# Day 26 – GitHub CLI: Manage GitHub From Your Terminal
 
-## Task
+## Overview
 
-Every time you switch to the browser to create a PR, check an issue, or manage a repo — you lose context. The **GitHub CLI (`gh`)** lets you do all of that without leaving your terminal. For DevOps engineers, this is essential — especially when you start automating workflows, scripting PR reviews, and managing repos at scale.
+Day 26 is about killing the context-switch. Every time I leave the terminal to open a browser tab — to raise a PR, check an issue, or spin up a repo — I lose focus and break my flow. The **GitHub CLI (`gh`)** brings GitHub *into* the terminal, so repos, issues, pull requests, releases, and even GitHub Actions runs are all a single command away.
 
----
+For a DevOps engineer this is not a convenience — it is a foundation. The moment GitHub becomes scriptable, it becomes automatable. `gh` speaks JSON, plugs into shell pipelines, and authenticates once — which means PR reviews, issue triage, and repo provisioning can all be wired into automation later.
 
-## Expected Output
-- A markdown file: `day-26-notes.md` with your observations and answers
-- Add `gh` commands to your `git-commands.md`
+Today I installed and authenticated `gh`, then drove the full GitHub lifecycle from the command line: created and deleted repos, opened and closed issues, raised and merged a pull request end-to-end, previewed GitHub Actions runs, and explored the power-user tricks (`gh api`, `gh alias`, `gh search`).
 
 ---
 
-## Challenge Tasks
+## What I Produced
 
-### Task 1: Install and Authenticate
-1. Install the GitHub CLI on your machine
-2. Authenticate with your GitHub account
-3. Verify you're logged in and check which account is active
-4. Answer in your notes: What authentication methods does `gh` support?
+- [`day-26-notes.md`](./day-26-notes.md)
+- Updated `git-commands.md` (now a complete Git **and** GitHub reference, Days 22–26)
 
 ---
 
-### Task 2: Working with Repositories
-1. Create a **new GitHub repo** directly from the terminal — make it public with a README
-2. Clone a repo using `gh` instead of `git clone`
-3. View details of one of your repos from the terminal
-4. List all your repositories
-5. Open a repo in your browser directly from the terminal
-6. Delete the test repo you created (be careful!)
+## Tasks Completed
+
+| Task | What I Did |
+|------|-----------|
+| 1 | Installed `gh`, authenticated via browser OAuth, verified the active account with `gh auth status` |
+| 2 | Created a public repo from the terminal, cloned with `gh repo clone`, viewed + listed repos, opened in browser, then deleted the test repo |
+| 3 | Created a labelled issue, listed open issues, viewed one by number, closed it from the terminal |
+| 4 | Branched → committed → pushed → raised a PR → checked status → merged it, all without leaving the terminal |
+| 5 | Listed and inspected GitHub Actions workflow runs on a public repo with `gh run` / `gh workflow` |
+| 6 | Explored `gh api`, `gh gist`, `gh release`, `gh alias`, and `gh search repos` |
 
 ---
 
-### Task 3: Issues
-1. Create an issue on one of your repos from the terminal — give it a title, body, and a label
-2. List all open issues on that repo
-3. View a specific issue by its number
-4. Close an issue from the terminal
-5. Answer in your notes: How could you use `gh issue` in a script or automation?
+## Key Observations
+
+**`gh` authenticates once and remembers — that single login is what unlocks automation.**
+After `gh auth login`, the token is stored securely and every later command reuses it. No re-typing credentials, no embedding tokens in scripts. This one-time trust is exactly why `gh` slots so cleanly into CI/CD and shell automation.
+
+**The `--json` flag turns GitHub into a data source.**
+Almost every list/view command accepts `--json` with a field selector, emitting machine-readable output. Piped into `jq`, that means issues, PRs, and runs become structured data I can filter, count, and act on in a script — the difference between *reading* GitHub and *programming* it.
+
+**`gh pr merge` carries the same three strategies I learned on Day 24.**
+`--merge`, `--squash`, and `--rebase` map directly to the merge concepts from earlier in the week — only now I'm choosing the integration strategy from the terminal instead of clicking a green button. The CLI didn't add new theory; it made the theory executable.
+
+**`gh repo delete` is the `--hard` reset of GitHub — irreversible.**
+Deleting a repo from the terminal is instant and asks for a confirmation by design. It reinforced the same lesson as `git reset --hard`: destructive commands deserve a deliberate pause, not muscle memory.
 
 ---
 
-### Task 4: Pull Requests
-1. Create a branch, make a change, push it, and create a **pull request** entirely from the terminal
-2. List all open PRs on a repo
-3. View the details of your PR — check its status, reviewers, and checks
-4. Merge your PR from the terminal
-5. Answer in your notes:
-   - What merge methods does `gh pr merge` support?
-   - How would you review someone else's PR using `gh`?
+## Real-World Tie-in
+
+- **Repo provisioning at scale** — `gh repo create` from a script means a new university microservice, lab project, or automation repo can be stamped out with consistent settings instead of hand-clicking the GitHub UI each time.
+- **Issue + PR automation** — `gh issue` and `gh pr` with `--json` are the building blocks of bots: auto-labelling tickets, nudging stale PRs, or gating a merge on checks — the kind of glue that keeps a busy infrastructure team moving.
+- **CI/CD visibility** — `gh run` and `gh workflow` let me watch and re-trigger pipeline runs without opening the browser, which is exactly how you debug a failed deployment fast when production is waiting.
+- **The terminal becomes the single pane of glass** — for managing university infrastructure changes, staying in one tool (code, commits, PRs, pipeline status) removes the friction that causes mistakes during a change window.
 
 ---
 
-### Task 5: GitHub Actions & Workflows (Preview)
-1. List the workflow runs on any public repo that uses GitHub Actions
-2. View the status of a specific workflow run
-3. Answer in your notes: How could `gh run` and `gh workflow` be useful in a CI/CD pipeline?
-
-(Don't worry if you haven't learned GitHub Actions yet — this is a preview for upcoming days)
-
----
-
-### Task 6: Useful `gh` Tricks
-Explore and try these — add the ones you find useful to your `git-commands.md`:
-1. `gh api` — make raw GitHub API calls from the terminal
-2. `gh gist` — create and manage GitHub Gists
-3. `gh release` — create and manage releases
-4. `gh alias` — create shortcuts for commands you use often
-5. `gh search repos` — search GitHub repos from the terminal
-
----
-
-## Hints
-- `gh help` and `gh <command> --help` are your best friends
-- Most `gh` commands work with `--repo owner/repo` to target a specific repo
-- Use `--json` flag with most commands to get machine-readable output (useful for scripting)
-- `gh pr create --fill` auto-fills the PR title and body from your commits
-
----
-
-## Submission
-1. Add your `day-26-notes.md` to `2026/day-26/`
-2. Update `git-commands.md` with `gh` commands — this completes your Git & GitHub reference from Days 22–26
-3. Push to your fork
-
----
-
-## Learn in Public
-
-Share your favorite `gh` commands or a screenshot of creating a PR from the terminal on LinkedIn.
-
-`#90DaysOfDevOps` `#DevOpsKaJosh` `#TrainWithShubham`
-
-Happy Learning!
-**TrainWithShubham**
+`#90DaysOfDevOps` `#DevOpsKaJosh` `#TrainWithShubham` `#GitHub` `#GitHubCLI` `#DevOps`

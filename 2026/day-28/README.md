@@ -1,135 +1,56 @@
-# Day 28 – Revision Day: Everything from Day 1 to Day 27
+# Day 28 – Revision Day: Everything From Day 1 to Day 27
 
-## Task
+## Overview
 
-You've covered a lot of ground in 27 days — DevOps fundamentals, Linux deep dives, Shell scripting, Python basics, Git & GitHub, and even your developer branding. Today, **stop and revise**. No new concepts. Just solidify what you've learned.
+Day 28 has no new tool, no new commands — and it might be the most honest day of the challenge so far. Today's job was to **stop and grade myself** on everything from Days 1–27: Linux, shell scripting, networking, Git & GitHub, and the profile work. Not "did I do the tasks" — but *can I actually do this without looking it up*.
 
-The goal is to identify gaps, revisit topics you struggled with, and make sure you can confidently explain and use everything covered so far.
+Here's the honest twist. I have 7 years in IT support — but most of that was on the Windows side. Linux only entered my daily life about 3 years ago, and lightly. So I expected the Linux column to scare me today. It didn't — and that's not my 7 years talking, it's the last 28 days of daily reps. What *did* earn honest "need to revisit" marks: shell scripting beyond the basics and some of the newer Git concepts. That's fine. The whole point of revision is finding the gaps *before* a production incident or an interview finds them for me.
 
----
-
-## What You've Covered So Far
-
-| Days | Topic | Key Concepts |
-|------|-------|-------------|
-| 1 | DevOps & Cloud Intro | What is DevOps, SDLC, Cloud basics |
-| 2–7 | Linux Fundamentals | Architecture, commands, processes, systemd, file system hierarchy, troubleshooting, text files |
-| 8 | Cloud Server Setup | Docker, Nginx, web deployment |
-| 9–11 | Users, Permissions & Ownership | User/group management, file permissions, chown/chgrp |
-| 12 | Revision Day 1 | Days 1–11 recap |
-| 13 | Volume Management | LVM — physical volumes, volume groups, logical volumes |
-| 14–15 | Networking | Fundamentals, DNS, IP, subnets, ports, hands-on checks |
-| 16–18 | Shell Scripting | Basics, loops, arguments, error handling, functions |
-| 19–20 | Shell Scripting Projects | Log rotation, backup, crontab, log analyzer |
-| 21 | Shell Scripting Cheat Sheet | Personal reference guide |
-| 22–25 | Git & GitHub | Init, branching, merge, rebase, stash, cherry pick, reset, revert, branching strategies |
-| 26 | GitHub CLI | Managing GitHub from the terminal |
-| 27 | GitHub Profile | Profile README, repo organization, developer branding |
+So today: full self-assessment checklist, three weak spots re-drilled hands-on, ten quick-fire questions answered from memory, repo housekeeping verified, and one topic taught back in plain words.
 
 ---
 
-## Challenge Tasks
+## What I Produced
 
-### Task 1: Self-Assessment Checklist
-Go through the checklist below. For each item, mark yourself honestly:
-- **Can do confidently**
-- **Need to revisit**
-- **Haven't done yet**
-
-#### Linux
-- [ ] Navigate the file system, create/move/delete files and directories
-- [ ] Manage processes — list, kill, background/foreground
-- [ ] Work with systemd — start, stop, enable, check status of services
-- [ ] Read and edit text files using vi/vim or nano
-- [ ] Troubleshoot CPU, memory, and disk issues using top, free, df, du
-- [ ] Explain the Linux file system hierarchy (/, /etc, /var, /home, /tmp, etc.)
-- [ ] Create users and groups, manage passwords
-- [ ] Set file permissions using chmod (numeric and symbolic)
-- [ ] Change file ownership with chown and chgrp
-- [ ] Create and manage LVM volumes
-- [ ] Check network connectivity — ping, curl, netstat, ss, dig, nslookup
-- [ ] Explain DNS resolution, IP addressing, subnets, and common ports
-
-#### Shell Scripting
-- [ ] Write a script with variables, arguments, and user input
-- [ ] Use if/elif/else and case statements
-- [ ] Write for, while, and until loops
-- [ ] Define and call functions with arguments and return values
-- [ ] Use grep, awk, sed, sort, uniq for text processing
-- [ ] Handle errors with set -e, set -u, set -o pipefail, trap
-- [ ] Schedule scripts with crontab
-
-#### Git & GitHub
-- [ ] Initialize a repo, stage, commit, and view history
-- [ ] Create and switch branches
-- [ ] Push to and pull from GitHub
-- [ ] Explain clone vs fork
-- [ ] Merge branches — understand fast-forward vs merge commit
-- [ ] Rebase a branch and explain when to use it vs merge
-- [ ] Use git stash and git stash pop
-- [ ] Cherry-pick a commit from another branch
-- [ ] Explain squash merge vs regular merge
-- [ ] Use git reset (soft, mixed, hard) and git revert
-- [ ] Explain GitFlow, GitHub Flow, and Trunk-Based Development
-- [ ] Use GitHub CLI to create repos, PRs, and issues
+- [`day-28-notes.md`](./day-28-notes.md) — the full self-assessment, weak-spot rework, quick-fire answers, and my teach-it-back
+- A clean, fully-pushed repo — Days 1–27 all committed, `git-commands.md` and the shell cheat sheet up to date
 
 ---
 
-### Task 2: Revisit Your Weak Spots
-1. Pick **3 topics** from the checklist where you marked "Need to revisit"
-2. Go back to that day's challenge and redo the hands-on tasks
-3. Document what you re-learned in `day-28-notes.md`
+## Tasks Completed
+
+| Task | What I Did |
+|------|-----------|
+| 1 | Went through the full checklist — marked every item honestly: confident / revisit / not yet |
+| 2 | Picked my 3 weakest topics (LVM, awk & sed, git rebase) and redid the hands-on for each |
+| 3 | Answered all 10 quick-fire questions from memory first, then verified — scored 7/10 cold |
+| 4 | Verified all daily submissions are pushed, references up to date, profile clean from Day 27 |
+| 5 | Taught back file permissions — explained `chmod`/`chown` the way I'd explain it to a new support hire |
 
 ---
 
-### Task 3: Quick-Fire Questions
-Answer these from memory (no Googling). Then verify your answers:
+## Key Observations
 
-1. What does `chmod 755 script.sh` do?
-2. What is the difference between a process and a service?
-3. How do you find which process is using port 8080?
-4. What does `set -euo pipefail` do in a shell script?
-5. What is the difference between `git reset --hard` and `git revert`?
-6. What branching strategy would you recommend for a team of 5 developers shipping weekly?
-7. What does `git stash` do and when would you use it?
-8. How do you schedule a script to run every day at 3 AM?
-9. What is the difference between `git fetch` and `git pull`?
-10. What is LVM and why would you use it instead of regular partitions?
+**The Linux column held up — but the credit goes to the challenge, not my 7 years.**
+Most of my support life was Windows; Linux only showed up for me ~3 years ago, and lightly. What support actually gave me is the troubleshooting *instinct* — read the symptoms, check the resources, isolate the layer — and that transfers from any platform. But the Linux *commands* under those ticks (processes, systemd, permissions, `top`/`df`/`free`) stuck because of 28 days of daily reps, not 7 years of tickets. Experience gives you the method; only practice gives you the tools.
 
----
+**"I did it once on Day X" is not the same as "I can do it".**
+I completed the rebase task on Day 24. Could I explain rebase vs merge from memory a week later? Roughly — but not crisply. Redoing it today without notes is what actually moved it from "did it" to "know it".
 
-### Task 4: Organize Your Work
-1. Make sure all your daily submissions (day-1 through day-27) are committed and pushed
-2. Check that your `git-commands.md` is up to date
-3. Check that your shell scripting cheat sheet is complete
-4. Verify your GitHub profile and repos are clean (from Day 27)
+**The quick-fire test exposed exactly what passive reading hides.**
+7/10 from memory. The three I fumbled — the exact behaviour of `set -euo pipefail`, the `lsof -i :8080` form, and a clean LVM explanation — are now written at the top of my notes. A wrong answer you catch yourself is worth more than ten pages re-read.
+
+**Teaching back is the real exam.**
+Explaining file permissions in plain words — no jargon, to an imaginary new hire — forced me to actually decide what matters: who you are (owner/group/other), what you can do (rwx), and how to change it. If you can't say it simply, you don't own it yet.
 
 ---
 
-### Task 5: Teach It Back
-Pick **one topic** you've learned and write a short explanation (5-10 lines) as if you're teaching it to someone who has never heard of it. Add it to your `day-28-notes.md`.
+## Real-World Tie-in
 
-Examples:
-- Explain Git branching to a non-developer
-- Explain file permissions to a new Linux user
-- Explain what a crontab is and why sysadmins use it
-
-Teaching is the best test of understanding.
+- **This is exactly how I'd run a skills audit at work** — the confident/revisit/not-yet triage is the same honest triage we did in support before taking on a new system: what can the team handle today, and what needs training before go-live.
+- **Revision before escalation** — in support, you re-verify the basics before escalating a ticket. Day 28 is the same discipline applied to learning: verify the foundation before stacking Docker, Kubernetes, and CI/CD on top of it.
+- **Interview readiness** — every quick-fire question today is a real interview question for a junior DevOps role. Finding my three weak answers in a self-test costs nothing; finding them in an interview costs the job.
 
 ---
 
-## Submission
-1. Add your `day-28-notes.md` to `2026/day-28/`
-2. Push to your fork
-3. Make sure all previous days are pushed and up to date
-
----
-
-## Learn in Public
-
-Share your self-assessment results or your "teach it back" explanation on LinkedIn. Be honest about what you found easy and what you need to work on.
-
-`#90DaysOfDevOps` `#DevOpsKaJosh` `#TrainWithShubham`
-
-Happy Learning!
-**TrainWithShubham**
+`#90DaysOfDevOps` `#DevOpsKaJosh` `#TrainWithShubham` `#Linux` `#Git` `#DevOps`

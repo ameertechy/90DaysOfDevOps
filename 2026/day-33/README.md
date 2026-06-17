@@ -1,89 +1,57 @@
 # Day 33 – Docker Compose: Multi-Container Basics
 
-## Task
-Today's goal is to **run multi-container applications with a single command**.
+## Overview
 
-Yesterday you manually created networks and volumes and ran containers one by one. Docker Compose does all of that in one YAML file.
+Day 33 is the day all the manual work from yesterday collapses into one file. On Day 32 I hand-created a network, a volume, and ran each container one by one with a long string of `docker run` flags. **Docker Compose** does all of that from a single `docker-compose.yml` — one command up, one command down.
 
----
+After yesterday's debugging session (where a single wrong bind-mount path broke my whole app), I really felt why Compose matters: when the setup lives in a file, it's repeatable and reviewable instead of a fragile sequence of terminal commands I have to retype perfectly every time. The setup becomes documentation.
 
-## Expected Output
-- A markdown file: `day-33-compose.md`
-- All `docker-compose.yml` files you create
+I worked through five things: verifying Compose, a single-service file (Nginx), a real two-service app (**WordPress + MySQL**) with a named volume and service-name networking, the everyday Compose commands, and configuration via environment variables and a `.env` file. The persistence test was the highlight — `down`, `up`, and my WordPress site was still there.
 
 ---
 
-## Challenge Tasks
+## What I Produced
 
-### Task 1: Install & Verify
-1. Check if Docker Compose is available on your machine
-2. Verify the version
-
----
-
-### Task 2: Your First Compose File
-1. Create a folder `compose-basics`
-2. Write a `docker-compose.yml` that runs a single **Nginx** container with port mapping
-3. Start it with `docker compose up`
-4. Access it in your browser
-5. Stop it with `docker compose down`
+- [`day-33-compose.md`](./day-33-compose.md) — every compose file I wrote, the commands, and the answers to each task
+- Screenshots of WordPress running via Compose and surviving a restart in [`screenshots/`](./screenshots/)
 
 ---
 
-### Task 3: Two-Container Setup
-Write a `docker-compose.yml` that runs:
-- A **WordPress** container
-- A **MySQL** container
+## Tasks Completed
 
-They should:
-- Be on the same network (Compose does this automatically)
-- MySQL should have a named volume for data persistence
-- WordPress should connect to MySQL using the service name
-
-Start it, access WordPress in your browser, and set it up.
-
-**Verify:** Stop and restart with `docker compose down` and `docker compose up` — is your WordPress data still there?
+| Task | What I Did |
+|------|-----------|
+| 1 | Verified Docker Compose (`docker compose version`) |
+| 2 | Wrote my first `docker-compose.yml` — a single Nginx service with port mapping; `up` → browser → `down` |
+| 3 | Ran **WordPress + MySQL** together: auto-network, named volume, WordPress reaching MySQL by service name |
+| 4 | Practised the core commands — `up -d`, `ps`, `logs` (all + specific), `stop`, `down`, `build` |
+| 5 | Set config via inline environment variables **and** a `.env` file, and verified they were picked up |
 
 ---
 
-### Task 4: Compose Commands
-Practice and document these:
-1. Start services in **detached mode**
-2. View running services
-3. View **logs** of all services
-4. View logs of a **specific** service
-5. **Stop** services without removing
-6. **Remove** everything (containers, networks)
-7. **Rebuild** images if you make a change
+## Key Observations
+
+**Compose is yesterday's manual commands, written down.**
+Everything I did by hand on Day 32 — create a network, create a volume, run containers, wire them together — Compose declares in YAML and does in one `up`. Same Docker underneath; the difference is it's now a repeatable file instead of a sequence I have to remember.
+
+**Compose creates the network for you — so service-name DNS just works.**
+On Day 32 I had to *create* a custom network to get name-based communication. Compose makes one automatically and puts every service on it, so WordPress reaching MySQL as `db` worked with zero extra setup. The thing I learned the hard way yesterday is the default here.
+
+**The persistence test is the proof Compose isn't magic.**
+`docker compose down` removed the containers and network — but because MySQL had a named volume, `docker compose up` brought my WordPress site back exactly as it was. Containers are disposable; the volume is what makes the data permanent. Day 32's lesson, now inside a file.
+
+**`.env` keeps secrets and config out of the YAML.**
+Compose reads a `.env` file automatically, so passwords and settings live outside the committed compose file. That's the clean way to separate "what the app is" from "how this environment is configured" — and to keep credentials out of git.
 
 ---
 
-### Task 5: Environment Variables
-1. Add environment variables directly in your `docker-compose.yml`
-2. Create a `.env` file and reference variables from it in your compose file
-3. Verify the variables are being picked up
+## Real-World Tie-in
+
+- **This is how real apps are run locally and in many small deployments** — a single `docker-compose.yml` brings up an app, its database, and its cache together. It's the exact shape of the three-tier app I built for practice.
+- **The setup becomes documentation** — a new engineer reads one YAML file and runs `docker compose up`, instead of following a wiki of `docker run` commands that drift out of date. Coming from infra, that's the cure for tribal knowledge.
+- **`.env` separation mirrors good config hygiene** — same principle as keeping credentials out of scripts on a server: the definition is shared, the secrets are local.
+- **Compose is the on-ramp to orchestration** — thinking in declarative services, networks, and volumes is the same mental model Kubernetes uses, just at a bigger scale. Learning it here makes the next jump smaller.
 
 ---
 
-## Hints
-- Start: `docker compose up -d`
-- Stop: `docker compose down`
-- Logs: `docker compose logs -f`
-- Compose creates a default network for all services automatically
-- Service names in compose are the DNS names containers use to talk to each other
-
----
-
-## Submission
-1. Add your compose files and `day-33-compose.md` to `2026/day-33/`
-2. Commit and push to your fork
-
----
-
-## Learn in Public
-Share your WordPress + MySQL running via Compose on LinkedIn.
-
-`#90DaysOfDevOps` `#DevOpsKaJosh` `#TrainWithShubham`
-
-Happy Learning!
-**TrainWithShubham**
+`#90DaysOfDevOps` `#DevOpsKaJosh` `#TrainWithShubham` `#Docker` `#DockerCompose` `#DevOps`

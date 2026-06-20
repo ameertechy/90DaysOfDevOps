@@ -1,94 +1,59 @@
 # Day 36 – Docker Project: Dockerize a Full Application
 
-## Task
-Today's goal is to **take a real application and Dockerize it end-to-end**.
+## Overview
 
-No tutorials. No hand-holding. Pick an app, write the Dockerfile, set up Compose, and ship it. This is what you'll do on the job.
+Day 36 is the capstone of the Docker week — no tutorial, no hand-holding: take a real app and Dockerize it end-to-end, the way you'd do it on the job. I used **DevBoard**, a full-stack Kanban project/task board I'd been building: a **React (Vite) frontend → Go (Gin) REST API → PostgreSQL** database.
 
----
+This day pulled together everything from Days 29–35 into one working system: my own images built from Dockerfiles (Day 31), multi-stage builds to shrink them (Days 30/35), volumes for data persistence and a network for service-name communication (Day 32), Docker Compose to orchestrate it all (Days 33–34), and a push to Docker Hub so anyone can pull and run it (Day 35).
 
-## Expected Output
-- A markdown file: `day-36-docker-project.md`
-- Complete project with Dockerfile, docker-compose.yml, and app code
-- Image pushed to Docker Hub
+The headline win: I **upgraded both images to multi-stage builds**. The backend dropped from a ~900MB single-stage image to a tiny binary on alpine, and the frontend went from a ~830MB node image to a small nginx image serving the built bundle. Same app, a fraction of the size — and a non-root user in both.
 
 ---
 
-## Challenge Tasks
+## What I Produced
 
-### Task 1: Pick Your App
-Choose **one** of these (or use your own project):
-- A **Python Flask/Django** app with a database
-- A **Node.js Express** app with MongoDB
-- A **static website** served by Nginx with a backend API
-- Any app from your GitHub that doesn't have Docker yet
-
-If you don't have an app, clone a simple open-source one and Dockerize it.
+- [`day-36-docker-project.md`](./day-36-docker-project.md) — the full project write-up: the app, the Dockerfiles (commented), the challenges I hit, final image sizes, and the Docker Hub link
+- A complete, runnable project — `docker-compose.yml`, multi-stage Dockerfiles, app code, Postgres init scripts, `.env`-driven config
+- Images pushed to Docker Hub
+- Screenshots of the running stack and the image-size drop in [`screenshots/`](./screenshots/)
 
 ---
 
-### Task 2: Write the Dockerfile
-1. Create a Dockerfile for your application
-2. Use a **multi-stage build** if applicable
-3. Use a **non-root user**
-4. Keep the image **small** — use alpine or slim base images
-5. Add a `.dockerignore` file
+## Tasks Completed
 
-Build and test it locally.
-
----
-
-### Task 3: Add Docker Compose
-Write a `docker-compose.yml` that includes:
-1. Your **app** service (built from Dockerfile)
-2. A **database** service (Postgres, MySQL, MongoDB — whatever your app needs)
-3. **Volumes** for database persistence
-4. A **custom network**
-5. **Environment variables** for configuration (use `.env` file)
-6. **Healthchecks** on the database
-
-Run `docker compose up` and verify everything works together.
+| Task | What I Did |
+|------|-----------|
+| 1 | Chose **DevBoard** (React + Go + Postgres) — my own full-stack app that needed proper Dockerization |
+| 2 | Wrote **multi-stage** Dockerfiles for both services — non-root user, alpine base, `.dockerignore` |
+| 3 | `docker-compose.yml` — app + DB, named volume, compose network, `.env` config, Postgres healthcheck |
+| 4 | Tagged and **pushed the images to Docker Hub**, with a project README |
+| 5 | Tore everything down and ran it **fresh** to prove it works from a clean state |
 
 ---
 
-### Task 4: Ship It
-1. Tag your app image
-2. Push it to Docker Hub
-3. Share the Docker Hub link
-4. Write a `README.md` in your project with:
-   - What the app does
-   - How to run it with Docker Compose
-   - Any environment variables needed
+## Key Observations
+
+**Multi-stage builds are the single biggest win for a real app.**
+Switching the backend to a builder→alpine multi-stage build took it from ~900MB to a tiny image — it ships only the compiled Go binary, not the whole toolchain. The frontend went from a node image running `vite preview` to an **nginx** image serving the static build (~830MB → a small nginx image). Production images should ship the *result*, not the build machinery.
+
+**The frontend's `/api` proxy had to move from Vite to nginx.**
+My dev/preview setup used Vite's proxy to forward `/api` to the backend (stripping the `/api` prefix). Serving the built bundle with nginx meant rebuilding that behaviour in `nginx.conf` — a `proxy_pass` with a trailing slash that strips `/api` so it matches the Go routes mounted at the root. Same routing, different layer.
+
+**`.env` as the single source of truth keeps the whole stack honest.**
+Every credential and port lives in `.env`; Compose substitutes them into the db and the backend (the backend's `POSTGRES_URL` is even built from the same Postgres vars). One place to change config, no secrets hard-coded in the compose file.
+
+**The fresh-run test is the real exam.**
+Tearing it all down and bringing it back from a clean state is what proves the project is actually portable — not just "works on the machine I built it on." If the healthcheck ordering, the init scripts, and the env wiring are right, `docker compose up` just works.
 
 ---
 
-### Task 5: Test the Whole Flow
-1. Remove all local images and containers
-2. Pull from Docker Hub and run using only your compose file
-3. Does it work fresh? If not — fix it until it does
+## Real-World Tie-in
+
+- **This is what "Dockerize the app" actually means on the job** — not a hello-world, but a real multi-service system with a database, persistence, and service-to-service networking, shipped as images anyone can pull.
+- **Image size is a production cost** — smaller images pull and deploy faster across every node and shrink the attack surface. The multi-stage drop is the difference between a heavy and a lean deployment.
+- **Non-root + pinned bases are baseline security** — both images run as a non-root user on specific alpine tags, the kind of thing a security review expects by default.
+- **A registry makes the app shareable** — pushing to Docker Hub means a teammate (or a CI/CD pipeline, or Kubernetes) pulls the exact same artifact I built, no "works on my machine."
 
 ---
 
-## Documentation
-Create `day-36-docker-project.md` with:
-- What app you chose and why
-- Your Dockerfile (with comments explaining each line)
-- Challenges you faced and how you solved them
-- Final image size
-- Docker Hub link
-
----
-
-## Submission
-1. Add all project files and `day-36-docker-project.md` to `2026/day-36/`
-2. Commit and push to your fork
-
----
-
-## Learn in Public
-Share your Dockerized project on LinkedIn — include the Docker Hub link so others can pull and run it.
-
-`#90DaysOfDevOps` `#DevOpsKaJosh` `#TrainWithShubham`
-
-Happy Learning!
-**TrainWithShubham**
+`#90DaysOfDevOps` `#DevOpsKaJosh` `#TrainWithShubham` `#Docker` `#DockerCompose` `#DevOps`

@@ -1,0 +1,27 @@
+# server.yaml — a server and its database, described with nested objects.
+# Each level of nesting = 2 more spaces of indentation.
+
+# Task 3 — nested objects
+server:
+  name: web-01
+  ip: 10.0.0.12
+  port: 8080
+
+database:
+  host: db-01
+  name: devboard
+  credentials:            # nested one level deeper
+    user: devboard
+    password: devboard
+
+# Task 4 — multi-line strings
+startup_script: |         # "|" block style: keeps every newline exactly as written
+  #!/bin/bash
+  echo "Starting web-01..."
+  docker compose up -d
+  echo "web-01 is up."
+
+health_note: >            # ">" folded style: line breaks become spaces -> one line
+  This server hosts the DevBoard frontend and proxies /api to the backend
+  container. It is checked every five minutes and restarts automatically
+  if the health check fails.

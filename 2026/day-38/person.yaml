@@ -1,0 +1,18 @@
+# person.yaml — a quick description of me, written by hand in YAML.
+# Rule I kept reminding myself: spaces only, never tabs.
+
+# Task 1 — key/value pairs
+name: Ameerul Mujahidin
+role: Infrastructure / Systems Engineer
+experience_years: 7
+learning: true            # boolean (true/false) — NOT the string "true"
+
+# Task 2 — two ways to write a list
+tools:                    # block style: one item per line, each starting with "- "
+  - Linux
+  - Git
+  - Docker
+  - Docker Compose
+  - Nginx
+
+hobbies: [reading, cricket, road trips]   # inline (flow) style: [item1, item2, ...]

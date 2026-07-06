@@ -1,91 +1,55 @@
 # Day 41 – Triggers & Matrix Builds
 
-## Task
-Your pipeline runs on push. Today you learn **every way to trigger a workflow** and how to run jobs across multiple environments at once.
+## Overview
+
+Running on every push is just the starting point. Day 41 is about controlling exactly *when* a workflow fires — PR events, a schedule, a manual button press — and how a single job definition multiplies into parallel runs across environments using a matrix strategy.
+
+I practiced this in a dedicated concept lab, my [`github-actions-practice`](https://github.com/ameertechy/github-actions-practice) repo, working directly on `main` — clean experiments, one concept at a time. (These same concepts combine into the real DevSecOps pipeline on my DevBoard project on Days 48–49.) The matrix run was the highlight: one job definition, multiple runners spinning up simultaneously — the Actions tab was busy in a way that made the parallel nature of CI actually visible.
 
 ---
 
-## Expected Output
-- New workflow files in your `github-actions-practice` repo
-- A markdown file: `day-41-triggers.md`
+## What I Produced
+
+- [`day-41-triggers.md`](./day-41-triggers.md) — notes covering every trigger type, matrix strategy, exclude, and the fail-fast toggle
+- Five workflow files on `main` of **github-actions-practice**: `pr-check.yml`, `scheduled.yml`, `manual.yml`, `matrix.yml`, `combined-triggers.yml`
+- Five screenshots of the runs in [`screenshots/`](./screenshots/) — PR check, manual dispatch, matrix jobs, combined triggers, `gh run list`
 
 ---
 
-## Challenge Tasks
+## Tasks Completed
 
-### Task 1: Trigger on Pull Request
-1. Create `.github/workflows/pr-check.yml`
-2. Trigger it only when a pull request is **opened or updated** against `main`
-3. Add a step that prints: `PR check running for branch: <branch name>`
-4. Create a new branch, push a commit, and open a PR
-5. Watch the workflow run automatically
-
-**Verify:** Does it show up on the PR page?
-
----
-
-### Task 2: Scheduled Trigger
-1. Add a `schedule:` trigger to any workflow using cron syntax
-2. Set it to run every day at midnight UTC
-3. Write in your notes: What is the cron expression for every Monday at 9 AM?
+| Task | What I Did |
+|------|-----------|
+| 1 | PR trigger — `pr-check.yml` fires when a PR is opened or updated against `main`; opened a test PR, watched the check run green, closed it |
+| 2 | `schedule:` trigger — daily midnight cron (`0 0 * * *`); worked out the Monday 9 AM expression. No run yet — schedules fire silently at the next matching UTC time on the default branch |
+| 3 | `workflow_dispatch:` with an `environment` input (choice: staging / production); ran it from the Actions tab button — first attempt failed, fixed and re-ran green |
+| 4 | Matrix build across Python 3.10 / 3.11 / 3.12 — 3 jobs ran in parallel |
+| 5 | Extended matrix to 2 OSes with an `exclude:` (6 jobs → 5) and `fail-fast: false` |
+| 6 | Combined triggers — `push` + `pull_request` + `workflow_dispatch` on one workflow with a `paths: backend/**` filter; pushed a backend change (fired) and a frontend-only change (skipped). Some push runs failed during experimentation before I got the config right |
+| 7 | Monitored everything from the terminal with `gh run list` / `gh run watch` |
 
 ---
 
-### Task 3: Manual Trigger
-1. Create `.github/workflows/manual.yml` with a `workflow_dispatch:` trigger
-2. Add an **input** that asks for an `environment` name (staging/production)
-3. Print the input value in a step
-4. Go to the **Actions** tab → find the workflow → click **Run workflow**
+## Key Observations
 
-**Verify:** Can you trigger it manually and see your input printed?
+**A trigger is a filter on a GitHub event.** `on: push` catches everything. `on: pull_request: branches: [main]` is far more precise — it only fires when someone opens or updates a PR targeting `main`. Wrong trigger = wrong noise in the Actions tab.
 
----
+**Matrix multiplies, not duplicates.** One job definition, one `strategy: matrix:` block, and GitHub expands it into N parallel jobs, each injecting a different value via `${{ matrix.key }}`. No copy-pasting jobs.
 
-### Task 4: Matrix Builds
-Create `.github/workflows/matrix.yml` that:
-1. Uses a matrix strategy to run the same job across:
-   - Python versions: `3.10`, `3.11`, `3.12`
-2. Each job installs Python and prints the version
-3. Watch all 3 run in parallel
+**`fail-fast: false` is a debugging lever.** Default is `true` — the moment one matrix job fails, the rest are cancelled. Setting it to `false` lets all jobs finish, which tells you whether it's one bad combination or a systemic problem. In production, fast feedback wins; in debugging, full visibility wins.
 
-Then extend the matrix to also include 2 operating systems — how many total jobs run now?
+**`workflow_dispatch` is the manual override.** Any workflow you want to trigger without a code push needs this. The `inputs:` key makes it parameterisable — environment name, version number, flags — whatever the job needs at runtime.
+
+**Path filters are the mono-repo cost saver.** With `paths: backend/**`, a frontend-only push doesn't even start the workflow. Watching one commit trigger the run and the next one skip it made the filter concrete.
 
 ---
 
-### Task 5: Exclude & Fail-Fast
-1. In your matrix, **exclude** one specific combination (e.g., Python 3.10 on Windows)
-2. Set `fail-fast: false` — trigger a failure in one job and observe what happens to the rest
-3. Write in your notes: What does `fail-fast: true` (the default) do vs `false`?
+## Real-World Tie-in
+
+- **Schedule triggers ≈ cron jobs I already manage.** In the datacenter I have maintenance scripts that run at set times regardless of what anyone is pushing. `schedule:` does the same for CI — backups, nightly reports, health checks.
+- **Matrix across OSes is a multi-server test.** Before rolling a new config script across campus, I'd want to know it works on Ubuntu 22.04 and 24.04 both. A matrix with two OS values is exactly that verification — automated, parallel, recorded.
+- **Manual triggers ≈ runbooks with inputs.** I've written step-by-step runbooks where an operator picks an environment before executing. `workflow_dispatch` with a `choice` input is that runbook, automated.
 
 ---
 
-## Hints
-- PR trigger: `on: pull_request: branches: [main]`
-- Cron trigger: `on: schedule: - cron: '0 0 * * *'`
-- Manual trigger: `on: workflow_dispatch: inputs:`
-- Matrix: `strategy: matrix: python-version: [...]`
-- Exclude: `exclude: - os: windows-latest python-version: "3.10"`
-
----
-
-## Documentation
-Create `day-41-triggers.md` with:
-- Each workflow YAML
-- Screenshots of runs
-- The cron expression answer from Task 2
-
----
-
-## Submission
-1. Add `day-41-triggers.md` to `2026/day-41/`
-2. Commit and push to your fork
-
----
-
-## Learn in Public
-Share your matrix build screenshot — seeing multiple jobs run in parallel for the first time is a great moment.
-
-`#90DaysOfDevOps` `#DevOpsKaJosh` `#TrainWithShubham`
-
-Happy Learning!
-**TrainWithShubham**
+`#90DaysOfDevOps` `#DevOpsKaJosh` `#TrainWithShubham` `#GitHubActions` `#CI` `#DevOps`

@@ -1,120 +1,54 @@
 # Day 42 – Runners: GitHub-Hosted & Self-Hosted
 
-## Task
-Every job needs a machine to run on. Today you understand **runners** — GitHub's hosted ones and how to set up your own self-hosted runner on a real server.
+## Overview
+
+Every job in a workflow needs a machine to execute on. Day 42 is about understanding that machine — what GitHub provides for free, what it costs in terms of trust, and what it means to bring your own. I registered my EC2 free-tier instance as a self-hosted runner on my [`github-actions-practice`](https://github.com/ameertechy/github-actions-practice) repo and ran workflows on it. Watching the logs show *my server's* hostname instead of some GitHub datacenter host was a different feeling entirely.
+
+It wasn't a straight line either: my first Multi-OS run failed, and the first self-hosted run failed before I cleared the error and re-ran green — which taught me more about reading Actions logs than any clean run would have. This EC2 runner stays alive: Day 49's DevSecOps pipeline deploys DevBoard onto it.
 
 ---
 
-## Expected Output
-- A self-hosted runner registered to your GitHub repo
-- A workflow that runs a job on your self-hosted runner
-- A markdown file: `day-42-runners.md`
+## What I Produced
+
+- [`day-42-runners.md`](./day-42-runners.md) — notes covering GitHub-hosted runners, pre-installed tools, self-hosted setup, labels, and the comparison table
+- `multi-os.yml`, `runner-tools.yml`, and `self-hosted.yml` workflows on `main` of **github-actions-practice**, the last one running on my EC2 instance
+- Seven screenshots in [`screenshots/`](./screenshots/) — multi-OS jobs, pre-installed tools, runner Idle in settings, `svc.sh status`, self-hosted job log, proof file, labeled-runner run
 
 ---
 
-## Challenge Tasks
+## Tasks Completed
 
-### Task 1: GitHub-Hosted Runners
-1. Create a workflow with 3 jobs, each on a different OS:
-   - `ubuntu-latest`
-   - `windows-latest`
-   - `macos-latest`
-2. In each job, print:
-   - The OS name
-   - The runner's hostname
-   - The current user running the job
-3. Watch all 3 run in parallel
-
-Write in your notes: What is a GitHub-hosted runner? Who manages it?
+| Task | What I Did |
+|------|-----------|
+| 1 | Three-job workflow — `ubuntu-latest`, `windows-latest`, `macos-latest` — each prints OS name, hostname, and current user; first run failed, fixed and re-ran green |
+| 2 | Printed Docker, Python, Node, Git, and Go versions from the `ubuntu-latest` runner; noted what's pre-installed |
+| 3 | Registered EC2 free-tier instance as a self-hosted runner (`config.sh` with the one-time token); installed it as a systemd service with `svc.sh install/start`; confirmed **Idle** in GitHub Settings |
+| 4 | `self-hosted.yml` — prints EC2 hostname, working directory, appends a proof line per run to `/tmp/actions-proof.txt`; verified the file accumulates lines on the instance across runs |
+| 5 | Debugged a failed self-hosted run, cleared the error, re-ran successfully |
+| 6 | Re-registered the runner with a custom label **`MUJA-RUNNER`** (`--labels ... --replace`); updated the workflow to `runs-on: [self-hosted, MUJA-RUNNER]` and verified it still picks up my EC2 |
+| 7 | Filled the GitHub-Hosted vs Self-Hosted comparison table |
 
 ---
 
-### Task 2: Explore What's Pre-installed
-1. On the `ubuntu-latest` runner, run a step that prints:
-   - Docker version
-   - Python version
-   - Node version
-   - Git version
-2. Look up the GitHub docs for the full list of pre-installed software on `ubuntu-latest`
+## Key Observations
 
-Write in your notes: Why does it matter that runners come with tools pre-installed?
+**GitHub-hosted runners are ephemeral, self-hosted runners are persistent.** Each GitHub-hosted run gets a brand-new, clean Ubuntu/Windows/macOS VM — nothing lingers between runs, which is exactly why they're trustworthy. Self-hosted runners run on a persistent machine — my proof file kept growing run after run.
 
----
+**The runner reaches OUT, not GitHub reaching in.** My EC2 has no inbound port open for GitHub. The runner process polls GitHub for jobs, pulls them, and streams logs back. That's why setup needs no firewall changes.
 
-### Task 3: Set Up a Self-Hosted Runner
-1. Go to your GitHub repo → Settings → Actions → Runners → **New self-hosted runner**
-2. Choose Linux as the OS
-3. Follow the instructions to download and configure the runner on:
-   - Your local machine, OR
-   - A cloud VM (EC2, Utho, or any VPS)
-4. Start the runner — verify it shows as **Idle** in GitHub
+**Pre-installed software is a time-saver until it isn't.** The `ubuntu-latest` runner ships with Docker, Node, Python, Go, and more already on it. For common stacks that's great — no install step. But versions are whatever GitHub last updated. Self-hosted gives you exact control — and an empty machine to start with.
 
-**Verify:** Your runner appears in the Runners list with a green dot.
+**Labels are the routing mechanism.** If you have five self-hosted runners, you need a way to target the right one. Labels let you tag a runner (`gpu-runner`, `MUJA-RUNNER`, `ec2-prod`) and point a job at it with `runs-on: [self-hosted, label]`.
+
+**Self-hosted for private network access.** The biggest reason to use a self-hosted runner in practice: the runner can reach things GitHub's cloud can't — an internal database, a private registry, a server behind a firewall. That's the real use case.
 
 ---
 
-### Task 4: Use Your Self-Hosted Runner
-1. Create `.github/workflows/self-hosted.yml`
-2. Set `runs-on: self-hosted`
-3. Add steps that:
-   - Print the hostname of the machine (it should be YOUR machine/VM)
-   - Print the working directory
-   - Create a file and verify it exists on your machine after the run
-4. Trigger it and watch it run on your own hardware
+## Real-World Tie-in
 
-**Verify:** Check your machine — is the file there?
+- **Self-hosted on EC2 = CI on your own infra.** On campus I manage physical servers. A self-hosted runner registered to one of them would let GitHub Actions deploy directly to that server — no VPN, no external gateway, just a process already running there waiting for jobs.
+- **The comparison table is the decision matrix.** Every time a team asks "should we use GitHub-hosted or set up our own?" the answer comes down to those five criteria: control, cost, trust model, network access, and maintenance burden. Now I can answer it from experience, not theory.
 
 ---
 
-### Task 5: Labels
-1. Add a **label** to your self-hosted runner (e.g., `my-linux-runner`)
-2. Update your workflow to use `runs-on: [self-hosted, my-linux-runner]`
-3. Trigger it — does it still pick up the job?
-
-Write in your notes: Why are labels useful when you have multiple self-hosted runners?
-
----
-
-### Task 6: GitHub-Hosted vs Self-Hosted
-Fill this in your notes:
-
-| | GitHub-Hosted | Self-Hosted |
-|---|---|---|
-| Who manages it? | ? | ? |
-| Cost | ? | ? |
-| Pre-installed tools | ? | ? |
-| Good for | ? | ? |
-| Security concern | ? | ? |
-
----
-
-## Hints
-- Runner setup script is generated by GitHub — just copy and run it
-- Self-hosted runner runs as a background service: `./run.sh`
-- To run as a service (persistent): `sudo ./svc.sh install && sudo ./svc.sh start`
-- `runs-on: self-hosted` targets any self-hosted runner
-- `runs-on: [self-hosted, linux, my-label]` targets specific ones
-
----
-
-## Documentation
-Create `day-42-runners.md` with:
-- Screenshot of your self-hosted runner showing as Idle in GitHub
-- Screenshot of a job running on your self-hosted runner
-- The comparison table from Task 6
-
----
-
-## Submission
-1. Add `day-42-runners.md` to `2026/day-42/`
-2. Commit and push to your fork
-
----
-
-## Learn in Public
-Share your self-hosted runner screenshot on LinkedIn — running CI on your own machine is a cool flex.
-
-`#90DaysOfDevOps` `#DevOpsKaJosh` `#TrainWithShubham`
-
-Happy Learning!
-**TrainWithShubham**
+`#90DaysOfDevOps` `#DevOpsKaJosh` `#TrainWithShubham` `#GitHubActions` `#CI` `#DevOps`

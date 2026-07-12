@@ -1,177 +1,55 @@
-# Day 61 -- Introduction to Terraform and Your First AWS Infrastructure
+# Day 61 – Introduction to Terraform & Your First AWS Infrastructure
 
-## Task
-You have been deploying containers, writing CI/CD pipelines, and orchestrating workloads on Kubernetes. But who creates the servers, networks, and clusters underneath? Today you start your Infrastructure as Code journey with Terraform -- the tool that lets you define, provision, and manage cloud infrastructure by writing code.
+*Also TerraWeek Challenge Day 1. Solution repo (fork): [ameertechy/TerraWeek → my-solutions/day-01](https://github.com/ameertechy/TerraWeek/tree/main/my-solutions/day-01)*
 
-By the end of today, you will have created real AWS resources using nothing but a `.tf` file and a terminal.
+## Overview
 
----
+I've spent 7+ years provisioning infrastructure the imperative way — SSH in, run the runbook, click through consoles, hope the next rebuild matches the last. Day 61 flipped that: I described an S3 bucket and an EC2 instance in a single `main.tf`, and Terraform created them, tracked them, and tore them down — identically, from code. The concept that used to be a CMDB I maintained by hand is now a state file the tool reconciles for me.
 
-## Expected Output
-- Terraform installed and working on your machine
-- AWS CLI configured with valid credentials
-- An S3 bucket and EC2 instance created and destroyed via Terraform
-- A markdown file: `day-61-terraform-intro.md`
+This was my re-entry into the challenge after a gap, done live alongside Shubham's #TerraWeekChallenge. Everything ran from my Ubuntu 24.04 laptop against real AWS (region `us-west-2`); no resource was left running.
 
 ---
 
-## Challenge Tasks
+## What I Produced
 
-### Task 1: Understand Infrastructure as Code
-Before touching the terminal, research and write short notes on:
-
-1. What is Infrastructure as Code (IaC)? Why does it matter in DevOps?
-2. What problems does IaC solve compared to manually creating resources in the AWS console?
-3. How is Terraform different from AWS CloudFormation, Ansible, and Pulumi?
-4. What does it mean that Terraform is "declarative" and "cloud-agnostic"?
-
-Write this in your own words -- not copy-pasted definitions.
+- [`main.tf`](./main.tf) — provider config + S3 bucket + AMI data source + EC2 instance
+- [`day-61-terraform-intro.md`](./day-61-terraform-intro.md) — IaC notes, command reference, and state-file write-up
+- 5 screenshots in [`screenshots/`](./screenshots/) — apply (S3), AWS verify, apply (EC2), state list, destroy
+- Committed solution in my TerraWeek fork under `my-solutions/day-01/` (with `.terraform.lock.hcl` pinned; state git-ignored)
 
 ---
 
-### Task 2: Install Terraform and Configure AWS
-1. Install Terraform:
-```bash
-# macOS
-brew tap hashicorp/tap
-brew install hashicorp/tap/terraform
+## Tasks Completed
 
-# Linux (amd64)
-wget -O - https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
-echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
-sudo apt update && sudo apt install terraform
-
-# Windows
-choco install terraform
-```
-
-2. Verify:
-```bash
-terraform -version
-```
-
-3. Install and configure the AWS CLI:
-```bash
-aws configure
-# Enter your Access Key ID, Secret Access Key, default region (e.g., ap-south-1), output format (json)
-```
-
-4. Verify AWS access:
-```bash
-aws sts get-caller-identity
-```
-
-You should see your AWS account ID and ARN.
+| Task | What I Did |
+|------|-----------|
+| 1 | Wrote IaC notes in my own words — what it is, what it solves vs manual console work, Terraform vs CloudFormation/Ansible/Pulumi, what "declarative" and "cloud-agnostic" mean |
+| 2 | Installed Terraform (v1.15+) on Ubuntu 24.04; confirmed AWS auth with `aws sts get-caller-identity` — Terraform reuses the CLI credentials, so no keys in code |
+| 3 | First config — `terraform { required_providers }`, `provider "aws"` (region `us-west-2`, AWS provider `~> 6.0`), and an `aws_s3_bucket`; ran init → plan → apply and verified with `aws s3 ls` |
+| 4 | Added an `aws_instance` (`t3.micro`) using a `data "aws_ami"` lookup for the latest Ubuntu 24.04 — plan showed only 1 resource to add, proving Terraform tracked the existing bucket |
+| 5 | Inspected state — `terraform state list`, `terraform show`, `terraform state show aws_instance.web`; documented what state holds and why it must never be edited or committed |
+| 6 | `terraform destroy` — removed both resources, verified they were gone from AWS. Confirmed the IaC promise: `.tf` stays, `apply` rebuilds it identically |
 
 ---
 
-### Task 3: Your First Terraform Config -- Create an S3 Bucket
-Create a project directory and write your first Terraform config:
+## Key Observations
 
-```bash
-mkdir terraform-basics && cd terraform-basics
-```
+**The reconciliation loop is the whole tool.** Every run, Terraform compares three things — my `.tf` (desired), the state file (last-known), and the live AWS API (actual) — and computes the diff. `plan` shows that diff before anything changes. That safety net is exactly what imperative runbooks never gave me.
 
-Create a file called `main.tf` with:
-1. A `terraform` block with `required_providers` specifying the `aws` provider
-2. A `provider "aws"` block with your region
-3. A `resource "aws_s3_bucket"` that creates a bucket with a globally unique name
+**Implicit dependencies come from references, not ordering.** My EC2 `ami = data.aws_ami.ubuntu.id` line alone told Terraform to resolve the AMI lookup before creating the instance. I never sequenced anything by hand — Terraform builds the graph from references.
 
-Run the Terraform lifecycle:
-```bash
-terraform init      # Download the AWS provider
-terraform plan      # Preview what will be created
-terraform apply     # Create the bucket (type 'yes' to confirm)
-```
+**State is the make-or-break concept.** `terraform.tfstate` maps my resource names to real AWS IDs and can contain sensitive attributes in plain text. Delete it and Terraform forgets it owns the infra; commit it and you leak secrets. Local state is fine for solo learning but not for a team — the production fix (remote S3 backend with locking) is Day 64.
 
-Go to the AWS S3 console and verify your bucket exists.
-
-**Document:** What did `terraform init` download? What does the `.terraform/` directory contain?
+**Provider version pinning matters.** I used `~> 6.0` (the current AWS provider major). Pinning stops a teammate's different provider version from producing a surprise plan.
 
 ---
 
-### Task 4: Add an EC2 Instance
-In the same `main.tf`, add:
-1. A `resource "aws_instance"` using AMI `ami-0f5ee92e2d63afc18` (Amazon Linux 2 in ap-south-1 -- use the correct AMI for your region)
-2. Set instance type to `t2.micro`
-3. Add a tag: `Name = "TerraWeek-Day1"`
+## Real-World Tie-in
 
-Run:
-```bash
-terraform plan      # You should see 1 resource to add (bucket already exists)
-terraform apply
-```
-
-Go to the AWS EC2 console and verify your instance is running with the correct name tag.
-
-**Document:** How does Terraform know the S3 bucket already exists and only the EC2 instance needs to be created?
+- **IaC replaces my runbooks with something enforceable.** The maintenance procedures I keep as documents become code that *is* the procedure — and `plan` tells me when reality has drifted from it. Drift detection alone is worth the switch.
+- **State file ≈ a CMDB that enforces itself.** I've maintained inventories of what's deployed; they go stale the moment someone changes something out-of-band. Terraform's state, reconciled against the live API every run, is that inventory made honest.
+- **`terraform destroy` = clean teardown of a whole environment.** Spinning up an identical test environment and tearing it down with two commands is something I'd have scripted painstakingly before. This is the reproducibility I always wanted.
 
 ---
 
-### Task 5: Understand the State File
-Terraform tracks everything it creates in a state file. Time to inspect it.
-
-1. Open `terraform.tfstate` in your editor -- read the JSON structure
-2. Run these commands and document what each returns:
-```bash
-terraform show                          # Human-readable view of current state
-terraform state list                    # List all resources Terraform manages
-terraform state show aws_s3_bucket.<name>   # Detailed view of a specific resource
-terraform state show aws_instance.<name>
-```
-
-3. Answer these questions in your notes:
-   - What information does the state file store about each resource?
-   - Why should you never manually edit the state file?
-   - Why should the state file not be committed to Git?
-
----
-
-### Task 6: Modify, Plan, and Destroy
-1. Change the EC2 instance tag from `"TerraWeek-Day1"` to `"TerraWeek-Modified"` in your `main.tf`
-2. Run `terraform plan` and read the output carefully:
-   - What do the `~`, `+`, and `-` symbols mean?
-   - Is this an in-place update or a destroy-and-recreate?
-3. Apply the change
-4. Verify the tag changed in the AWS console
-5. Finally, destroy everything:
-```bash
-terraform destroy
-```
-6. Verify in the AWS console -- both the S3 bucket and EC2 instance should be gone
-
----
-
-## Hints
-- S3 bucket names must be globally unique -- use something like `terraweek-<yourname>-2026`
-- AMI IDs are region-specific -- search "Amazon Linux 2 AMI" in your region's EC2 launch wizard
-- `terraform fmt` auto-formats your `.tf` files -- run it before committing
-- `terraform validate` checks for syntax errors without connecting to AWS
-- The `.terraform/` directory contains downloaded provider plugins
-- Add `*.tfstate`, `*.tfstate.backup`, and `.terraform/` to your `.gitignore`
-
----
-
-## Documentation
-Create `day-61-terraform-intro.md` with:
-- IaC explanation in your own words (3-4 sentences)
-- Screenshot of `terraform apply` creating your S3 bucket and EC2 instance
-- Screenshot of the resources in the AWS console
-- What each Terraform command does (init, plan, apply, destroy, show, state list)
-- What the state file contains and why it matters
-
----
-
-## Submission
-1. Add `day-61-terraform-intro.md` to `2026/day-61/`
-2. Commit and push to your fork
-
----
-
-## Learn in Public
-Share on LinkedIn: "Started the TerraWeek Challenge -- installed Terraform, created my first S3 bucket and EC2 instance using code, and destroyed it all with one command. Infrastructure as Code just clicked."
-
-`#90DaysOfDevOps` `#TerraWeek` `#DevOpsKaJosh` `#TrainWithShubham`
-
-Happy Learning!
-**TrainWithShubham**
+`#90DaysOfDevOps` `#TerraWeek` `#DevOpsKaJosh` `#TrainWithShubham` `#Terraform` `#IaC`

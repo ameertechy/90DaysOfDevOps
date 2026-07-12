@@ -1,6 +1,6 @@
 # Day 61 – Introduction to Terraform & Your First AWS Infrastructure
 
-*Also TerraWeek Challenge Day 1. Solution repo (fork): [ameertechy/TerraWeek → my-solutions/day-01](https://github.com/ameertechy/TerraWeek/tree/main/my-solutions/day-01)*
+*Also TerraWeek Challenge Day 1. Solution repo: [ameertechy/terraweek-challenge → day-01-introduction](https://github.com/ameertechy/terraweek-challenge/tree/main/day-01-introduction)*
 
 ## Overview
 

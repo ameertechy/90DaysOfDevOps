@@ -1,219 +1,60 @@
-# Day 63 -- Variables, Outputs, Data Sources and Expressions
+# Day 63 – Terraform Variables, Outputs, Data Sources and Expressions
 
-## Task
-Your Day 62 config works, but it is full of hardcoded values -- region, CIDR blocks, AMI IDs, instance types, tags. Change the region and everything breaks. Today you make your Terraform configs dynamic, reusable, and environment-aware.
+*Also TerraWeek Challenge Day 2 (HCL). Solution repo: [ameertechy/terraweek-challenge → day-02-hcl](https://github.com/ameertechy/terraweek-challenge/tree/main/day-02-hcl)*
 
-This is the difference between a config that works once and a config you can use across projects.
+## Overview
 
----
+Day 1's config worked, but every value was frozen into it — region, instance type, names. Day 63 was about making the same infrastructure dynamic: variables with real types and validation, per-environment `.tfvars` files, computed locals, and outputs. The result is one codebase that deploys dev or prod depending on which values you feed it — the Terraform equivalent of replacing environment-specific runbooks with one runbook plus environment-specific config files.
 
-## Expected Output
-- A fully parameterized Terraform config with no hardcoded values
-- Separate `.tfvars` files for different environments
-- Outputs printed after every apply
-- A markdown file: `day-63-variables-outputs.md`
+Done on my Ubuntu 24.04 laptop against AWS `us-west-2`, on the default VPC (the from-scratch VPC comes tomorrow with Managing Resources). Everything destroyed at the end of the session.
 
 ---
 
-## Challenge Tasks
+## What I Produced
 
-### Task 1: Extract Variables
-Take your Day 62 infrastructure config and refactor it:
-
-1. Create a `variables.tf` file with input variables for:
-   - `region` (string, default: your preferred region)
-   - `vpc_cidr` (string, default: `"10.0.0.0/16"`)
-   - `subnet_cidr` (string, default: `"10.0.1.0/24"`)
-   - `instance_type` (string, default: `"t2.micro"`)
-   - `project_name` (string, no default -- force the user to provide it)
-   - `environment` (string, default: `"dev"`)
-   - `allowed_ports` (list of numbers, default: `[22, 80, 443]`)
-   - `extra_tags` (map of strings, default: `{}`)
-
-2. Replace every hardcoded value in `main.tf` with `var.<name>` references
-3. Run `terraform plan` -- it should prompt you for `project_name` since it has no default
-
-**Document:** What are the five variable types in Terraform? (`string`, `number`, `bool`, `list`, `map`)
+- [`variables.tf`](./variables.tf) — 8 input variables covering all five types (`string`, `number`, `bool`, `list(number)`, `map(string)`), one deliberately required (no default), one with a custom `validation` block
+- [`main.tf`](./main.tf) — fully parameterized: provider region from a variable, Amazon Linux 2 AMI + availability zones via data sources, a security group whose ingress rules are **generated from a list variable** with a `dynamic` block, and a `count`-based EC2 instance
+- [`locals.tf`](./locals.tf) — naming convention by interpolation, merged common tags, and a conditional that force-enables monitoring in prod
+- [`outputs.tf`](./outputs.tf) — instance IDs/IPs/DNS via splat expressions, SG ID, resolved AMI ID
+- [`terraform.tfvars`](./terraform.tfvars) + [`prod.tfvars`](./prod.tfvars) — dev defaults vs prod overrides (committed deliberately with `git add -f`; they contain no secrets)
+- [`day-63-variables-outputs.md`](./day-63-variables-outputs.md) — notes: types, precedence order, expressions
+- 4 screenshots in [`screenshots/`](./screenshots/)
 
 ---
 
-### Task 2: Variable Files and Precedence
-1. Create `terraform.tfvars`:
-```hcl
-project_name = "terraweek"
-environment  = "dev"
-instance_type = "t2.micro"
-```
+## Tasks Completed
 
-2. Create `prod.tfvars`:
-```hcl
-project_name = "terraweek"
-environment  = "prod"
-instance_type = "t3.small"
-vpc_cidr     = "10.1.0.0/16"
-subnet_cidr  = "10.1.1.0/24"
-```
-
-3. Apply with the default file:
-```bash
-terraform plan                              # Uses terraform.tfvars automatically
-```
-
-4. Apply with the prod file:
-```bash
-terraform plan -var-file="prod.tfvars"      # Uses prod.tfvars
-```
-
-5. Override with CLI:
-```bash
-terraform plan -var="instance_type=t2.nano"  # CLI overrides everything
-```
-
-6. Set an environment variable:
-```bash
-export TF_VAR_environment="staging"
-terraform plan                              # env var overrides default but not tfvars
-```
-
-**Document:** Write the variable precedence order from lowest to highest priority.
+| Task | What I Did |
+|------|-----------|
+| 1 | Extracted every hardcoded value into `variables.tf` — region, instance type/count, environment (with `validation` restricting it to dev/staging/prod), allowed ports as `list(number)`, extra tags as `map(string)`; left `project_name` without a default and watched `terraform plan` refuse to run without it |
+| 2 | Created `terraform.tfvars` (dev) and `prod.tfvars`; proved precedence hands-on — tfvars auto-loaded, `-var-file="prod.tfvars"` switched instance type to t3.small, and a `-var` CLI flag overrode everything |
+| 3 | `outputs.tf` with six outputs; after apply, queried them with `terraform output`, a single-output lookup, and `-json` |
+| 4 | Data sources — `aws_ami` (Amazon Linux 2, `owners = ["amazon"]`, hvm/gp2 filters, resolved to `ami-04d78408ebc2960db`) and `aws_availability_zones` (instance pinned to `names[0]` = us-west-2a by expression, not hardcoding) |
+| 5 | Locals — `name_prefix = "${var.project_name}-${var.environment}"` naming everything `terraweek-dev-*`, `merge()` of common tags with caller tags, and `environment == "prod" ? true : var.enable_detailed_monitoring` (verified: monitoring stayed `false` in dev) |
+| 6 | Applied (SG with exactly 3 ingress rules generated from `[22, 80, 443]` + 1 t3.micro instance), verified outputs, then `terraform destroy` — 2 resources destroyed, `terraform state list` returned empty |
 
 ---
 
-### Task 3: Add Outputs
-Create an `outputs.tf` file with outputs for:
+## Key Observations
 
-1. `vpc_id` -- the VPC ID
-2. `subnet_id` -- the public subnet ID
-3. `instance_id` -- the EC2 instance ID
-4. `instance_public_ip` -- the public IP of the EC2 instance
-5. `instance_public_dns` -- the public DNS name
-6. `security_group_id` -- the security group ID
+**Variable precedence, from experience not memorization:** `default` → `TF_VAR_` env vars → `terraform.tfvars` → `*.auto.tfvars` → `-var-file`/`-var` (last flag wins). The CLI flag overriding both tfvars files was the moment the ordering stuck.
 
-Apply your config and verify the outputs are printed at the end:
-```bash
-terraform apply
+**A required variable is a design decision.** Omitting `default` on `project_name` means nobody can apply this config on autopilot — Terraform stops and asks. Use it for the values no one should assume.
 
-# After apply, you can also run:
-terraform output                          # Show all outputs
-terraform output instance_public_ip       # Show a specific output
-terraform output -json                    # JSON format for scripting
-```
+**`dynamic` blocks turn data into infrastructure.** The SG's three ingress rules aren't written anywhere — they're generated from `var.allowed_ports`. Adding port 8080 to a list in a tfvars file would create a firewall rule with zero code changes. That inverts how I've always managed firewall configs.
 
-**Verify:** Does `terraform output instance_public_ip` return the correct IP?
+**Variables vs locals is inputs vs derivations.** `var.*` comes from outside (a person, a tfvars file, CI); `local.*` is computed inside. The naming prefix and merged tags belong in locals because no caller should set them directly.
+
+**Splat expressions future-proof outputs.** `aws_instance.web[*].id` works identically for `instance_count = 1` or `= 10` — outputs don't need rewriting when the fleet grows.
 
 ---
 
-### Task 4: Use Data Sources
-Stop hardcoding the AMI ID. Use a data source to fetch it dynamically.
+## Real-World Tie-in
 
-1. Add a `data "aws_ami"` block that:
-   - Filters for Amazon Linux 2 images
-   - Filters for `hvm` virtualization and `gp2` root device
-   - Uses `owners = ["amazon"]`
-   - Sets `most_recent = true`
-
-2. Replace the hardcoded AMI in your `aws_instance` with `data.aws_ami.amazon_linux.id`
-
-3. Add a `data "aws_availability_zones"` block to fetch available AZs in your region
-
-4. Use the first AZ in your subnet: `data.aws_availability_zones.available.names[0]`
-
-Apply and verify -- your config now works in any region without changing the AMI.
-
-**Document:** What is the difference between a `resource` and a `data` source?
+- **`prod.tfvars` vs `terraform.tfvars` is change control I already know** — same procedure, different parameter sheet per environment. Except here the "procedure" can't drift between environments, because it's literally the same code.
+- **The validation block is a pre-flight check.** I've seen changes land in the wrong environment because of a typo in a variable. `contains(["dev","staging","prod"], var.environment)` kills that class of error at plan time.
+- **`terraform output -json` is the integration point** — the IPs/IDs of what Terraform builds, machine-readable, ready to feed an inventory or a pipeline. This is the handshake to Ansible (day 68+) and CI/CD.
 
 ---
 
-### Task 5: Use Locals for Dynamic Values
-1. Add a `locals` block:
-```hcl
-locals {
-  name_prefix = "${var.project_name}-${var.environment}"
-  common_tags = {
-    Project     = var.project_name
-    Environment = var.environment
-    ManagedBy   = "Terraform"
-  }
-}
-```
-
-2. Replace all Name tags with `local.name_prefix`:
-   - VPC: `"${local.name_prefix}-vpc"`
-   - Subnet: `"${local.name_prefix}-subnet"`
-   - Instance: `"${local.name_prefix}-server"`
-
-3. Merge common tags with resource-specific tags:
-```hcl
-tags = merge(local.common_tags, {
-  Name = "${local.name_prefix}-server"
-})
-```
-
-Apply and check the tags in the AWS console -- every resource should have consistent tagging.
-
----
-
-### Task 6: Built-in Functions and Conditional Expressions
-Practice these in `terraform console`:
-```bash
-terraform console
-```
-
-1. **String functions:**
-   - `upper("terraweek")` -> `"TERRAWEEK"`
-   - `join("-", ["terra", "week", "2026"])` -> `"terra-week-2026"`
-   - `format("arn:aws:s3:::%s", "my-bucket")`
-
-2. **Collection functions:**
-   - `length(["a", "b", "c"])` -> `3`
-   - `lookup({dev = "t2.micro", prod = "t3.small"}, "dev")` -> `"t2.micro"`
-   - `toset(["a", "b", "a"])` -> removes duplicates
-
-3. **Networking function:**
-   - `cidrsubnet("10.0.0.0/16", 8, 1)` -> `"10.0.1.0/24"`
-
-4. **Conditional expression** -- add this to your config:
-```hcl
-instance_type = var.environment == "prod" ? "t3.small" : "t2.micro"
-```
-
-Apply with `environment = "prod"` and verify the instance type changes.
-
-**Document:** Pick five functions you find most useful and explain what each does.
-
----
-
-## Hints
-- `terraform.tfvars` is loaded automatically. Any other `.tfvars` file needs `-var-file`
-- Variable precedence (low to high): default -> `terraform.tfvars` -> `*.auto.tfvars` -> `-var-file` -> `-var` flag -> `TF_VAR_*` env vars
-- `terraform console` is an interactive REPL for testing expressions and functions
-- Data sources are read-only -- they fetch information, they don't create resources
-- `merge()` combines two maps -- great for tags
-- `terraform output -json` is useful when piping output into other scripts
-
----
-
-## Documentation
-Create `day-63-variables-outputs.md` with:
-- Your `variables.tf` with all variable types
-- Both `.tfvars` files (dev and prod)
-- Screenshot of outputs after `terraform apply`
-- Explanation of variable precedence with examples
-- Five built-in functions you found most useful
-- The difference between `variable`, `local`, `output`, and `data`
-
----
-
-## Submission
-1. Add `day-63-variables-outputs.md` to `2026/day-63/`
-2. Commit and push to your fork
-
----
-
-## Learn in Public
-Share on LinkedIn: "Made my Terraform configs fully dynamic today -- variables for every environment, data sources for AMI lookups, locals for consistent tagging, and conditional expressions for environment-specific sizing. Zero hardcoded values."
-
-`#90DaysOfDevOps` `#TerraWeek` `#DevOpsKaJosh` `#TrainWithShubham`
-
-Happy Learning!
-**TrainWithShubham**
+`#90DaysOfDevOps` `#TerraWeek` `#DevOpsKaJosh` `#TrainWithShubham` `#Terraform` `#IaC`
